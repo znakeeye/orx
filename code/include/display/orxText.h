@@ -156,6 +156,18 @@ extern orxDLLAPI orxSTATUS orxFASTCALL    orxText_SetString(orxTEXT *_pstText, c
  */
 extern orxDLLAPI orxSTATUS orxFASTCALL    orxText_SetFont(orxTEXT *_pstText, orxFONT *_pstFont);
 
+/** Gets number of markers
+ * @param[in]   _pstText      Concerned text
+ * @return      Text marker counter
+ */
+extern orxDLLAPI orxU32 orxFASTCALL orxText_GetMarkerCounter(const orxTEXT *_pstText);
+
+/** Gets marker array
+ * @param[in] _pstText  Concerned text
+ * @return Pointer to orxTEXT_MARKER / orxNULL if no markers
+ */
+extern orxDLLAPI const orxTEXT_MARKER *orxFASTCALL orxText_GetMarkerArray(const orxTEXT *_pstText);
+
 #endif /* _orxTEXT_H_ */
 
 /** @} */

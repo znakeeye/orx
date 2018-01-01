@@ -175,6 +175,47 @@ typedef struct __orxCOLOR_t
 
 } orxCOLOR;
 
+/** Text marker types
+ */
+typedef enum __orxTEXT_MARKER_TYPE_t
+{
+  /* Userland marker types */
+  orxTEXT_MARKER_TYPE_FONT = 0,
+  orxTEXT_MARKER_TYPE_COLOR,
+  orxTEXT_MARKER_TYPE_SCALE,
+  orxTEXT_MARKER_TYPE_NUMBER_REVERT, /* Sentinel value for enum boundary of revertible marker types */
+  orxTEXT_MARKER_TYPE_POP,
+  orxTEXT_MARKER_TYPE_CLEAR,
+  orxTEXT_MARKER_TYPE_NUMBER_PARSED, /* Sentinel value for enum boundary of parsed marker types */
+  /* Internal marker types */
+  orxTEXT_MARKER_TYPE_LINE_HEIGHT,
+  orxTEXT_MARKER_TYPE_NUMBER, /* Sentinel value for enum boundary */
+  orxTEXT_MARKER_TYPE_NONE = orxENUM_NONE
+} orxTEXT_MARKER_TYPE;
+
+/** Text marker data structure */
+typedef struct __orxTEXT_MARKER_DATA_t {
+  orxTEXT_MARKER_TYPE    eType;
+  union
+  {
+    struct
+    {
+      const orxCHARACTER_MAP  *pstMap;
+      const orxBITMAP         *pstFont;
+    } stFontData;
+    orxRGBA              stRGBA;
+    orxVECTOR            vScale;
+    orxFLOAT             fLineHeight;
+  };
+} orxTEXT_MARKER_DATA;
+
+/** Text marker structure */
+typedef struct __orxTEXT_MARKER_t
+{
+  orxU32                 u32Index;
+  orxTEXT_MARKER_DATA    stData;
+} orxTEXT_MARKER;
+
 
 /** Config parameters
  */
@@ -988,6 +1029,8 @@ extern orxDLLAPI orxSTATUS orxFASTCALL                orxDisplay_TransformBitmap
 
 /** Transforms a text (onto a bitmap)
  * @param[in]   _zString                              String to display
+ * @param[in]   _pstMarkerArray                       The markers to use for rendering text styles
+ * @param[in]   _u32MarkerCounter                     The number of markers in the marker array
  * @param[in]   _pstFont                              Font bitmap
  * @param[in]   _pstMap                               Character map
  * @param[in]   _pstTransform                         Transformation info (position, scale, rotation, ...)
@@ -995,8 +1038,7 @@ extern orxDLLAPI orxSTATUS orxFASTCALL                orxDisplay_TransformBitmap
  * @param[in]   _eBlendMode                           Blend mode
  * @return orxSTATUS_SUCCESS / orxSTATUS_FAILURE
  */
-extern orxDLLAPI orxSTATUS orxFASTCALL                orxDisplay_TransformText(const orxSTRING _zString, const orxBITMAP *_pstFont, const orxCHARACTER_MAP *_pstMap, const orxDISPLAY_TRANSFORM *_pstTransform, orxDISPLAY_SMOOTHING _eSmoothing, orxDISPLAY_BLEND_MODE _eBlendMode);
-
+extern orxDLLAPI orxSTATUS orxFASTCALL                orxDisplay_TransformText(const orxSTRING _zString, const orxTEXT_MARKER *_pstMarkerArray, orxU32 _u32MarkerCounter, const orxBITMAP *_pstFont, const orxCHARACTER_MAP *_pstMap, const orxDISPLAY_TRANSFORM *_pstTransform, orxDISPLAY_SMOOTHING _eSmoothing, orxDISPLAY_BLEND_MODE _eBlendMode);
 
 /** Draws a line
  * @param[in]   _pvStart                              Start point

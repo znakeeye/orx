@@ -330,7 +330,7 @@ static orxINLINE void orxRender_Home_RenderFPS()
     acBuffer[sizeof(acBuffer) - 1] = orxCHAR_NULL;
 
     /* Displays it */
-    orxDisplay_TransformText(acBuffer, pstBitmap, orxFont_GetMap(pstFont), &stTextTransform, orxDISPLAY_SMOOTHING_OFF, orxDISPLAY_BLEND_MODE_ALPHA);
+    orxDisplay_TransformText(acBuffer, orxNULL, 0, pstBitmap, orxFont_GetMap(pstFont), &stTextTransform, orxDISPLAY_SMOOTHING_OFF, orxDISPLAY_BLEND_MODE_ALPHA);
   }
 
   /* Re-enables marker operations */
@@ -625,7 +625,7 @@ static orxINLINE void orxRender_Home_RenderProfiler()
   stTransform.fScaleX = fHeight / pstMap->fCharacterHeight;
   stTransform.fScaleX = orxMIN(fTextScale, stTransform.fScaleX);
   stTransform.fScaleY = stTransform.fScaleX = orxCLAMP(stTransform.fScaleX, orxRENDER_KF_PROFILER_TEXT_MIN_HEIGHT, orxRENDER_KF_PROFILER_TEXT_MAX_HEIGHT);
-  orxDisplay_TransformText(acLabel, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+  orxDisplay_TransformText(acLabel, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
 
   /* Selects white color */
   orxDisplay_SetBitmapColor(pstBitmap, orx2RGBA(0xFF, 0xFF, 0xFF, 0xCC));
@@ -839,7 +839,7 @@ static orxINLINE void orxRender_Home_RenderProfiler()
 
       /* Draws its label */
       orxString_NPrint(acLabel + u32Depth, sizeof(acLabel) - 1 - u32Depth, " %s [%.2f|%.2fms][%dx]", orxProfiler_GetMarkerName(s32MarkerID), orx2D(1000.0) * dTime, orx2D(1000.0) * orxProfiler_GetMarkerMaxTime(s32MarkerID), orxProfiler_GetMarkerPushCounter(s32MarkerID));
-      orxDisplay_TransformText(acLabel, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+      orxDisplay_TransformText(acLabel, orxNULL, 0, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
 
       /* Updates position */
       if(bLandscape != orxFALSE)
@@ -881,7 +881,7 @@ static orxINLINE void orxRender_Home_RenderProfiler()
 
       /* Draws its label */
       orxString_NPrint(acLabel + u32Depth, sizeof(acLabel) - 1 - u32Depth, " %s [%.2f|%.2fms][%dx]", orxProfiler_GetMarkerName(s32MarkerID), orx2D(1000.0) * dTime, orx2D(1000.0) * orxProfiler_GetMarkerMaxTime(s32MarkerID), orxProfiler_GetMarkerPushCounter(s32MarkerID));
-      orxDisplay_TransformText(acLabel, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+      orxDisplay_TransformText(acLabel, orxNULL, 0, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
 
       /* Updates position */
       if(bLandscape != orxFALSE)
@@ -1009,7 +1009,7 @@ static orxINLINE void orxRender_Home_RenderProfiler()
 
       /* Draws its label */
       orxString_NPrint(acLabel, sizeof(acLabel) - 1, "%s [%.2f|%.2fms][%dx]", orxProfiler_GetMarkerName(s32MarkerID), orx2D(1000.0) * dTime, orx2D(1000.0) * orxProfiler_GetMarkerMaxTime(s32MarkerID), orxProfiler_GetMarkerPushCounter(s32MarkerID));
-      orxDisplay_TransformText(acLabel, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+      orxDisplay_TransformText(acLabel, orxNULL, 0, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
 
       /* Updates position */
       if(bLandscape != orxFALSE)
@@ -1132,7 +1132,7 @@ static orxINLINE void orxRender_Home_RenderProfiler()
 
       /* Draws it */
       orxString_NPrint(acLabel, sizeof(acLabel) - 1, "%-12s[%d|%dx] [%.2f|%.2f%s] [%d#]", zType, u32Counter, u32PeakCounter, fSize, fPeakSize, azUnitList[u32UnitIndex], u32OperationCounter);
-      orxDisplay_TransformText(acLabel, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+      orxDisplay_TransformText(acLabel, orxNULL, 0, pstFontBitmap, orxFont_GetMap(pstFont), &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
     }
   }
 
@@ -1269,7 +1269,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
     if(orxConsole_IsInsertMode() != orxFALSE)
     {
       /* Displays full input, including auto-completion */
-      orxDisplay_TransformText(zText, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+      orxDisplay_TransformText(zText, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
 
       /* Overrides characters at cursor position */
       ((orxCHAR*)zText)[u32CursorIndex] = orxRENDER_KC_CONSOLE_INSERT_MARKER;
@@ -1280,7 +1280,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
       ((orxCHAR*)zText)[u32CursorIndex] = orxRENDER_KC_CONSOLE_OVERTYPE_MARKER;
 
       /* Displays full input, including auto-completion */
-      orxDisplay_TransformText(zText, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+      orxDisplay_TransformText(zText, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
     }
 
     /* Truncates to base input + cursor */
@@ -1289,7 +1289,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
   else
   {
     /* Displays full input, including auto-completion */
-    orxDisplay_TransformText(zText, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+    orxDisplay_TransformText(zText, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
 
     /* Truncates to base input */
     ((orxCHAR*)zText)[u32CursorIndex] = orxCHAR_NULL;
@@ -1297,7 +1297,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
 
   /* Displays base input (ie. validated part) */
   orxDisplay_SetBitmapColor(pstFontBitmap, orxRENDER_KST_CONSOLE_INPUT_COLOR);
-  orxDisplay_TransformText(zText, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+  orxDisplay_TransformText(zText, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
   ((orxCHAR*)zText)[u32CursorIndex] = acBackup[0];
   if(u32CursorIndex < 255)
   {
@@ -1311,7 +1311,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
       i++, stTransform.fDstY -= fCharacterHeight)
   {
     /* Displays it */
-    orxDisplay_TransformText(zText, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+    orxDisplay_TransformText(zText, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
   }
 
   /* Gets log offset */
@@ -1329,7 +1329,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
     fBackupX = stTransform.fDstX;
     stTransform.fDstX = orxMath_Floor(fScreenWidth * (orxFLOAT_1 - orxRENDER_KF_CONSOLE_MARGIN_WIDTH)) - (orxString_GetLength(acBuffer) * fCharacterWidth);
     stTransform.fDstY = fBackupY;
-    orxDisplay_TransformText(acBuffer, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+    orxDisplay_TransformText(acBuffer, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
     stTransform.fDstX = fBackupX;
   }
 
@@ -1362,7 +1362,7 @@ static orxINLINE void orxRender_Home_RenderConsole()
     stTransform.fDstY = fBackupY - ((u32Counter - i - 1) * fCharacterHeight);
 
     /* Displays it */
-    orxDisplay_TransformText(zText, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
+    orxDisplay_TransformText(zText, orxNULL, 0, pstFontBitmap, pstMap, &stTransform, orxDISPLAY_SMOOTHING_NONE, orxDISPLAY_BLEND_MODE_ALPHA);
   }
 
   /* Deletes pixel texture */
@@ -1529,7 +1529,7 @@ static orxSTATUS orxFASTCALL orxRender_Home_RenderObject(const orxOBJECT *_pstOb
         else
         {
           /* Transforms text */
-          eResult = orxDisplay_TransformText(orxText_GetString(pstText), pstBitmap, orxFont_GetMap(pstFont), stPayload.stObject.pstTransform, _eSmoothing, _eBlendMode);
+          eResult = orxDisplay_TransformText(orxText_GetString(pstText), orxText_GetMarkerArray(pstText), orxText_GetMarkerCounter(pstText), pstBitmap, orxFont_GetMap(pstFont), stPayload.stObject.pstTransform, _eSmoothing, _eBlendMode);
         }
       }
       else

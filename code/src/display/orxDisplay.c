@@ -148,7 +148,7 @@ orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_GetBitmapSize, orxSTATUS, const orxBIT
 orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_GetBitmapID, orxU32, const orxBITMAP *);
 
 orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_TransformBitmap, orxSTATUS, const orxBITMAP *, const orxDISPLAY_TRANSFORM *, orxDISPLAY_SMOOTHING, orxDISPLAY_BLEND_MODE);
-orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_TransformText, orxSTATUS, const orxSTRING, const orxBITMAP *, const orxCHARACTER_MAP *, const orxDISPLAY_TRANSFORM *, orxDISPLAY_SMOOTHING, orxDISPLAY_BLEND_MODE);
+orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_TransformText, orxSTATUS, const orxSTRING, const orxTEXT_MARKER *, orxU32, const orxBITMAP *, const orxCHARACTER_MAP *, const orxDISPLAY_TRANSFORM *, orxDISPLAY_SMOOTHING, orxDISPLAY_BLEND_MODE);
 
 orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_DrawLine, orxSTATUS, const orxVECTOR *, const orxVECTOR *, orxRGBA);
 orxPLUGIN_DEFINE_CORE_FUNCTION(orxDisplay_DrawPolyline, orxSTATUS, const orxVECTOR *, orxU32, orxRGBA);
@@ -265,9 +265,9 @@ orxSTATUS orxFASTCALL orxDisplay_Swap()
   return orxPLUGIN_CORE_FUNCTION_POINTER_NAME(orxDisplay_Swap)();
 }
 
-orxSTATUS orxFASTCALL orxDisplay_TransformText(const orxSTRING _zString, const orxBITMAP *_pstFont, const orxCHARACTER_MAP *_pstMap, const orxDISPLAY_TRANSFORM *_pstTransform, orxDISPLAY_SMOOTHING _eSmoothing, orxDISPLAY_BLEND_MODE _eBlendMode)
+orxSTATUS orxFASTCALL orxDisplay_TransformText(const orxSTRING _zString, const orxTEXT_MARKER *_pstMarkerArray, orxU32 _u32MarkerCounter, const orxBITMAP *_pstFont, const orxCHARACTER_MAP *_pstMap, const orxDISPLAY_TRANSFORM *_pstTransform, orxDISPLAY_SMOOTHING _eSmoothing, orxDISPLAY_BLEND_MODE _eBlendMode)
 {
-  return orxPLUGIN_CORE_FUNCTION_POINTER_NAME(orxDisplay_TransformText)(_zString, _pstFont, _pstMap, _pstTransform, _eSmoothing, _eBlendMode);
+  return orxPLUGIN_CORE_FUNCTION_POINTER_NAME(orxDisplay_TransformText)(_zString, _pstMarkerArray, _u32MarkerCounter, _pstFont, _pstMap, _pstTransform, _eSmoothing, _eBlendMode);
 }
 
 orxSTATUS orxFASTCALL orxDisplay_DrawLine(const orxVECTOR *_pvStart, const orxVECTOR *_pvEnd, orxRGBA _stColor)

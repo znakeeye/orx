@@ -1917,7 +1917,7 @@ orxBITMAP *orxFASTCALL orxDisplay_GLFW_GetScreenBitmap()
   return sstDisplay.pstScreen;
 }
 
-orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, const orxBITMAP *_pstFont, const orxCHARACTER_MAP *_pstMap, const orxDISPLAY_TRANSFORM *_pstTransform, orxDISPLAY_SMOOTHING _eSmoothing, orxDISPLAY_BLEND_MODE _eBlendMode)
+orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, const orxTEXT_MARKER *_pstMarkerArray, orxU32 _u32MarkerCounter, const orxBITMAP *_pstFont, const orxCHARACTER_MAP *_pstMap, const orxDISPLAY_TRANSFORM *_pstTransform, orxDISPLAY_SMOOTHING _eSmoothing, orxDISPLAY_BLEND_MODE _eBlendMode)
 {
   orxDISPLAY_MATRIX mTransform;
   const orxCHAR    *pc;

@@ -68,7 +68,19 @@
 
 #define orxTEXT_KC_LOCALE_MARKER              '$'
 
+#define orxTEXT_KZ_MARKER_WARNING             "Invalid text marker [%c%s%s] in [%s]!"
+#define orxTEXT_KC_MARKER_SYNTAX_START        '`'
+#define orxTEXT_KC_MARKER_SYNTAX_OPEN         '('
+#define orxTEXT_KC_MARKER_SYNTAX_CLOSE        ')'
+#define orxTEXT_KZ_MARKER_TYPE_FONT           "font"
+#define orxTEXT_KZ_MARKER_TYPE_COLOR          "color"
+#define orxTEXT_KZ_MARKER_TYPE_SCALE          "scale"
+#define orxTEXT_KZ_MARKER_TYPE_POP            "!"
+#define orxTEXT_KZ_MARKER_TYPE_CLEAR          "*"
+
 #define orxTEXT_KU32_BANK_SIZE                256         /**< Bank size */
+#define orxTEXT_KU32_MARKER_CELL_BANK_SIZE    128         /**< Bank size */
+#define orxTEXT_KU32_MARKER_DATA_BANK_SIZE    128         /**< Bank size */
 
 
 /***************************************************************************
@@ -82,6 +94,8 @@ struct __orxTEXT_t
   orxSTRUCTURE      stStructure;                /**< Public structure, first structure member : 40 / 64 */
   orxSTRING         zString;                    /**< String : 44 / 72 */
   orxFONT          *pstFont;                    /**< Font : 48 / 80 */
+  orxTEXT_MARKER   *pstMarkers;
+  orxU32            u32MarkerCounter;
   orxFLOAT          fWidth;                     /**< Width : 52 / 84 */
   orxFLOAT          fHeight;                    /**< Height : 56 / 88 */
   const orxSTRING   zReference;                 /**< Config reference : 60 / 96 */
@@ -1281,4 +1295,42 @@ orxSTATUS orxFASTCALL orxText_SetFont(orxTEXT *_pstText, orxFONT *_pstFont)
 
   /* Done! */
   return eResult;
+}
+
+/** Gets number of markers
+  * @param[in]   _pstText      Concerned text
+  * @return      Text marker counter
+  */
+orxU32 orxFASTCALL orxText_GetMarkerCounter(const orxTEXT *_pstText)
+{
+    orxU32 u32Result;
+
+    /* Checks */
+    orxASSERT(sstText.u32Flags & orxTEXT_KU32_STATIC_FLAG_READY);
+    orxSTRUCTURE_ASSERT(_pstText);
+
+    /* Updates result */
+    u32Result = _pstText->u32MarkerCounter;
+
+    /* Done! */
+    return u32Result;
+}
+
+/** Gets marker array
+ * @param[in] _pstText  Concerned text
+ * @return Pointer to orxTEXT_MARKER / orxNULL if no markers
+ */
+const orxTEXT_MARKER *orxFASTCALL orxText_GetMarkerArray(const orxTEXT *_pstText)
+{
+  const orxTEXT_MARKER *pstResult = orxNULL;
+
+  /* Checks */
+  orxASSERT(sstText.u32Flags & orxTEXT_KU32_STATIC_FLAG_READY);
+  orxSTRUCTURE_ASSERT(_pstText);
+
+  /* Update result */
+  pstResult = _pstText->pstMarkers;
+
+  /* Done! */
+  return pstResult;
 }
