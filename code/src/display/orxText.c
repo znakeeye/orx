@@ -742,6 +742,8 @@ orxTEXT *orxFASTCALL orxText_Create()
     pstResult->zString          = orxNULL;
     pstResult->pstFont          = orxNULL;
     pstResult->zOriginalString  = orxNULL;
+    pstResult->pstMarkers       = orxNULL;
+    pstResult->u32MarkerCounter = 0;
 
     /* Inits flags */
     orxStructure_SetFlags(pstResult, orxTEXT_KU32_FLAG_NONE, orxTEXT_KU32_MASK_ALL);
@@ -1224,6 +1226,13 @@ orxSTATUS orxFASTCALL orxText_SetString(orxTEXT *_pstText, const orxSTRING _zStr
       orxString_Delete(_pstText->zOriginalString);
       _pstText->zOriginalString = orxNULL;
     }
+  }
+
+  if (_pstText->pstMarkers != orxNULL)
+  {
+    orxMemory_Free(_pstText->pstMarkers);
+    _pstText->pstMarkers = orxNULL;
+    _pstText->u32MarkerCounter = 0;
   }
 
   /* Has new string? */
