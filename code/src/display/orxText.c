@@ -40,6 +40,7 @@
 #include "math/orxVector.h"
 #include "object/orxStructure.h"
 #include "utils/orxHashTable.h"
+#include "utils/orxLinkList.h"
 
 
 /** Module flags
@@ -368,8 +369,9 @@ static orxSTATUS orxFASTCALL orxText_EventHandler(const orxEVENT *_pstEvent)
  */
 typedef struct __orxTEXT_MARKER_NODE_t
 {
-  orxLINKLIST_NODE           stNode;
-  const orxTEXT_MARKER_DATA *pstData;
+  orxLINKLIST_NODE      stNode;
+  orxU32                u32MarkerDisambiguation;
+  const orxTEXT_MARKER *pstMarker;
 } orxTEXT_MARKER_NODE;
 
 typedef struct __orxTEXT_MARKER_PARSER_CONTEXT_t
@@ -597,6 +599,148 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
 
   return pstResult;
 }
+
+#define orxText_MarkerTypeIsStyle(eType)       (((eType) >= 0) && ((eType) < orxTEXT_MARKER_TYPE_NUMBER_STYLES))
+#define orxText_MarkerTypeIsManipulator(eType) (((eType) > orxTEXT_MARKER_TYPE_NUMBER_STYLES) && ((eType) < orxTEXT_MARKER_TYPE_NUMBER_PARSED))
+#define orxText_MarkerTypeIsParsed(eType)      (orxText_MarkerTypeIsStyle((eType)) || orxText_MarkerTypeIsManipulator((eType)))
+
+/** Takes style markers out of the text string and places them into an array.
+ * @param[in]   _pstText      Concerned text
+ * @return      A cleaned version of the current string for _pstText
+ */
+static orxSTRING orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
+{
+  /* Stacks for each marker type - most recent marker is derived from the max character index among the tops of each stack. */
+  orxLINKLIST  stMarkerStacks[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
+  orxU32       u32ParsedStyleMarkerCount = 0;
+  /* Bank for marker allocation */
+  orxBANK     *pstMarkerBank     = orxBank_Create(orxTEXT_KU32_MARKER_DATA_BANK_SIZE, sizeof(orxTEXT_MARKER),
+                                                  orxBANK_KU32_FLAG_NONE, orxMEMORY_TYPE_MAIN);
+  /* Memory bank for marker nodes that are put in the marker stacks */
+  orxBANK     *pstMarkerNodeBank = orxBank_Create(orxTEXT_KU32_MARKER_DATA_BANK_SIZE, sizeof(orxTEXT_MARKER_NODE),
+                                                  orxBANK_KU32_FLAG_NONE, orxMEMORY_TYPE_MAIN);
+  /* Initialize the output string */
+  orxSTRING zOutputString       = orxString_Duplicate(_pstText->zString);
+  orxU32    u32OutputStringSize = orxString_GetLength(zOutputString) + 1;
+  orxMemory_Zero(zOutputString, u32OutputStringSize);
+
+  orxTEXT_MARKER_PARSER_CONTEXT stContext = {0};
+  stContext.u32CharacterCodePoint = orxU32_UNDEFINED;
+  stContext.u32OutputSize = u32OutputStringSize;
+  stContext.u32CharacterIndex = 0;
+  stContext.zPositionInOutputString = zOutputString;
+  stContext.zPositionInMarkedString = _pstText->zString;
+
+  /* Walk UTF-8 encoded string */
+  while (stContext.u32CharacterCodePoint != orxCHAR_NULL)
+  {
+    orxTEXT_MARKER *pstNewMarker = orxText_TryParseMarker(pstMarkerBank, &stContext);
+    /* Hit a marker? */
+    if (pstNewMarker != orxNULL)
+    {
+      orxASSERT(orxText_MarkerTypeIsParsed(pstNewMarker->stData.eType));
+      if (orxText_MarkerTypeIsStyle(pstNewMarker->stData.eType))
+      {
+        /* Push marker onto the relevant stack */
+        orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(pstMarkerNodeBank);
+        if (pstNode == orxNULL)
+        {
+          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
+          break;
+        }
+        u32ParsedStyleMarkerCount++;
+        pstNode->pstMarker = pstNewMarker;
+        pstNode->u32MarkerDisambiguation = u32ParsedStyleMarkerCount;
+
+        orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
+
+        /* TODO Add marker to the marker array */
+
+      }
+      else if (orxText_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
+      {
+        /* Manipulate relevant marker stack based on the manipulator */
+
+        /* Is it a pop manipulation? */
+        if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_POP)
+        {
+          /* Find the most recently added marker */
+          /* TODO find better name for this! */
+          orxU32 u32MaxIndex = 0;
+          orxTEXT_MARKER_TYPE eTopType = orxTEXT_MARKER_TYPE_NONE;
+          for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
+          {
+            orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[pstNewMarker->stData.eType]);
+            if (pstNode != orxNULL)
+            {
+              if (pstNode->u32MarkerDisambiguation > u32MaxIndex)
+              {
+                u32MaxIndex = pstNode->u32MarkerDisambiguation;
+                eTopType = pstNewMarker->stData.eType;
+              }
+            }
+          }
+          /* No markers at all? */
+          if (eTopType == orxTEXT_MARKER_TYPE_NONE)
+          {
+            /* TODO log warning */
+            break;
+          }
+          orxASSERT(orxText_MarkerTypeIsStyle(eTopType));
+          /* Find the marker that we'll be falling back to. */
+          orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eTopType]);
+          orxASSERT(pstNode != orxNULL, "Marker type [%d] was ostensibly valid, how can the top node for it be null?", eTopType);
+          if (pstNode == orxNULL)
+          {
+            /* TODO log warning */
+            break;
+          }
+          orxTEXT_MARKER_DATA stPreviousMarkerDataOfType;
+          orxMemory_Zero(&stPreviousMarkerDataOfType, sizeof(stPreviousMarkerDataOfType));
+          orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetPrevious((orxLINKLIST_NODE *) pstNode);
+          /* Pop stack */
+          orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstNode);
+          orxASSERT(eOK == orxSTATUS_SUCCESS);
+          orxBank_Free(pstMarkerNodeBank, pstNode);
+          pstNode = orxNULL;
+          /* Check fallback */
+          if (pstFallbackNode == orxNULL)
+          {
+            /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
+            stPreviousMarkerDataOfType.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+            stPreviousMarkerDataOfType.eTypeOfDefault = eTopType;
+          }
+          else
+          {
+            /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
+            stPreviousMarkerDataOfType = pstFallbackNode->pstMarker->stData;
+          }
+          /* Modify the new marker to change from a stack pop to whatever it translates into before adding it to the marker array */
+          pstNewMarker->stData = stPreviousMarkerDataOfType;
+          /* TODO add to array */
+        }
+        else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
+        {
+          /* TODO Add a default marker for each style type to the marker array */
+
+          /* Free the manipulator */
+          orxBank_Free(pstMarkerBank, pstNewMarker);
+          pstNewMarker = orxNULL;
+        }
+        else
+        {
+          orxASSERT(orxFALSE, "Impossible marker type [%d]", pstNewMarker->stData.eType);
+        }
+      }
+      else
+      {
+        orxASSERT(orxFALSE, "Impossible marker type [%d]", pstNewMarker->stData.eType);
+      }
+    }
+  }
+  return zOutputString;
+}
+
 /** Updates text size
  * @param[in]   _pstText      Concerned text
  */
@@ -1475,6 +1619,9 @@ orxSTATUS orxFASTCALL orxText_SetString(orxTEXT *_pstText, const orxSTRING _zStr
     /* Stores a duplicate */
     _pstText->zString = orxString_Duplicate(_zString);
   }
+
+  /* Update markers, removing all markers from the string */
+  orxText_ProcessMarkedString(_pstText);
 
   /* Updates text size */
   orxText_UpdateSize(_pstText);

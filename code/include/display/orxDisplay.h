@@ -183,11 +183,12 @@ typedef enum __orxTEXT_MARKER_TYPE_t
   orxTEXT_MARKER_TYPE_FONT = 0,
   orxTEXT_MARKER_TYPE_COLOR,
   orxTEXT_MARKER_TYPE_SCALE,
-  orxTEXT_MARKER_TYPE_NUMBER_REVERT, /* Sentinel value for enum boundary of revertible marker types */
+  orxTEXT_MARKER_TYPE_NUMBER_STYLES, /* Sentinel value for enum boundary of revertible marker types */
   orxTEXT_MARKER_TYPE_POP,
   orxTEXT_MARKER_TYPE_CLEAR,
   orxTEXT_MARKER_TYPE_NUMBER_PARSED, /* Sentinel value for enum boundary of parsed marker types */
   /* Internal marker types */
+  orxTEXT_MARKER_TYPE_STYLE_DEFAULT,
   orxTEXT_MARKER_TYPE_LINE_HEIGHT,
   orxTEXT_MARKER_TYPE_NUMBER, /* Sentinel value for enum boundary */
   orxTEXT_MARKER_TYPE_NONE = orxENUM_NONE
@@ -206,6 +207,7 @@ typedef struct __orxTEXT_MARKER_DATA_t {
     orxRGBA              stRGBA;
     orxVECTOR            vScale;
     orxFLOAT             fLineHeight;
+    orxTEXT_MARKER_TYPE  eTypeOfDefault;
   };
 } orxTEXT_MARKER_DATA;
 
