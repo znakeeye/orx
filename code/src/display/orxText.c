@@ -71,6 +71,8 @@
 
 #define orxTEXT_KZ_MARKER_WARNING             "Invalid text marker [%c%s%s] in [%s]!"
 #define orxTEXT_KC_MARKER_SYNTAX_START        '`'
+/* TODO orxSTRING has alt open/close chars and this should probably follow suit */
+/* TODO it would be good to add a generic argument walker to orxString to ease the walking of delimited strings */
 #define orxTEXT_KC_MARKER_SYNTAX_OPEN         '('
 #define orxTEXT_KC_MARKER_SYNTAX_CLOSE        ')'
 #define orxTEXT_KZ_MARKER_TYPE_FONT           "font"
@@ -872,6 +874,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             break;
           }
 
+          /* TODO There are other characters that are worth breaking lines on that span more than one byte. Unicode spaces/punctuation are good examples. If anyone were to write an interpreter for text wrapping in another language, this would break pretty badly. */
           case ' ':
           case '\t':
           {
@@ -1514,6 +1517,8 @@ orxSTATUS orxFASTCALL orxText_SetSize(orxTEXT *_pstText, orxFLOAT _fWidth, orxFL
   orxASSERT(sstText.u32Flags & orxTEXT_KU32_STATIC_FLAG_READY);
   orxSTRUCTURE_ASSERT(_pstText);
   orxASSERT (_fWidth > orxFLOAT_0);
+
+  /* NOTE This needs to remove line height markers and allow updatesize to replace them */
 
   /* Unconstrained? */
   if(_fWidth <= orxFLOAT_0)
