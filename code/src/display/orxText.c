@@ -363,6 +363,240 @@ static orxSTATUS orxFASTCALL orxText_EventHandler(const orxEVENT *_pstEvent)
   return eResult;
 }
 
+/** Marker node
+ *  Used specifically for dry run of marker traversal
+ */
+typedef struct __orxTEXT_MARKER_NODE_t
+{
+  orxLINKLIST_NODE           stNode;
+  const orxTEXT_MARKER_DATA *pstData;
+} orxTEXT_MARKER_NODE;
+
+typedef struct __orxTEXT_MARKER_PARSER_CONTEXT_t
+{
+  orxU32    u32OutputSize;           /** The size of the output string */
+  orxU32    u32CharacterCodePoint;   /** The current codepoint to analyze */
+  orxU32    u32CharacterIndex;       /** The current character index of the output string for the next created marker to be inserted at */
+  orxSTRING zPositionInMarkedString; /** Cursor for the next codepoint in the marked string */
+  orxSTRING zPositionInOutputString; /** Cursor for the next empty space in the output string */
+} orxTEXT_MARKER_PARSER_CONTEXT;
+
+static orxBOOL orxText_CheckMarkerType(orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext, const orxSTRING _zCheckAgainst)
+{
+  orxBOOL bResult = orxFALSE;
+  orxU32 u32Length = orxString_GetLength(_zCheckAgainst);
+  /* Is it the type we're checking against? */
+  if (orxString_NCompare(_pstParserContext->zPositionInMarkedString, _zCheckAgainst, u32Length) == 0)
+  {
+    bResult = orxTRUE;
+    /* Advance string to the end of the type */
+    _pstParserContext->zPositionInMarkedString += u32Length;
+  }
+  return bResult;
+}
+
+static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+{
+  orxTEXT_MARKER_TYPE eType = orxTEXT_MARKER_TYPE_NONE;
+  /* Check for valid marker types */
+  if (orxText_CheckMarkerType(_pstParserContext, orxTEXT_KZ_MARKER_TYPE_FONT))
+  {
+    eType = orxTEXT_MARKER_TYPE_FONT;
+  }
+  else if (orxText_CheckMarkerType(_pstParserContext, orxTEXT_KZ_MARKER_TYPE_COLOR))
+  {
+    eType = orxTEXT_MARKER_TYPE_COLOR;
+  }
+  else if (orxText_CheckMarkerType(_pstParserContext, orxTEXT_KZ_MARKER_TYPE_SCALE))
+  {
+    eType = orxTEXT_MARKER_TYPE_SCALE;
+  }
+  else if (orxText_CheckMarkerType(_pstParserContext, orxTEXT_KZ_MARKER_TYPE_POP))
+  {
+    eType = orxTEXT_MARKER_TYPE_POP;
+  }
+  else if (orxText_CheckMarkerType(_pstParserContext, orxTEXT_KZ_MARKER_TYPE_CLEAR))
+  {
+    eType = orxTEXT_MARKER_TYPE_CLEAR;
+  }
+  else
+  {
+    /* If no valid types were found this will return the NONE type */
+    orxASSERT(eType == orxTEXT_MARKER_TYPE_NONE);
+  }
+  return eType;
+}
+
+static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+{
+  orxTEXT_MARKER_DATA stResult;
+  orxMemory_Zero(&stResult, sizeof(stResult));
+
+  stResult.eType = _eType;
+
+  if (_eType == orxTEXT_MARKER_TYPE_FONT)
+  {
+    /* Is a marker value start character? */
+    if (*_pstParserContext->zPositionInMarkedString != orxTEXT_KC_MARKER_SYNTAX_OPEN)
+    {
+      stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+    }
+    else
+    {
+      const orxSTRING zStringClose = orxString_SearchChar(_pstParserContext->zPositionInMarkedString, orxTEXT_KC_MARKER_SYNTAX_CLOSE);
+      if (zStringClose == orxNULL)
+      {
+        stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+      }
+      else
+      {
+        orxU32 u32StringOffset = zStringClose - _pstParserContext->zPositionInMarkedString;
+        orxSTRING zStringEnd = _pstParserContext->zPositionInMarkedString + u32StringOffset;
+        orxASSERT(*zStringEnd == orxTEXT_KC_MARKER_SYNTAX_CLOSE);
+        *zStringEnd = orxCHAR_NULL;
+        orxSTRING zStringStart = _pstParserContext->zPositionInMarkedString + 1;
+        /* Try to read the font */
+        orxFONT *pstFont = orxFont_CreateFromConfig(zStringStart);
+        if (pstFont == orxNULL)
+        {
+          stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+          /* Log warning */
+          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Invalid font section name [%s] found for font marker - it will be ignored", zStringStart);
+        }
+        else
+        {
+          stResult.stFontData.pstMap = orxFont_GetMap(pstFont);
+          stResult.stFontData.pstFont = orxTexture_GetBitmap(orxFont_GetTexture(pstFont));
+        }
+        /* Advance to character after the marker */
+        _pstParserContext->zPositionInMarkedString = zStringEnd + 1;
+      }
+    }
+  }
+  else if (_eType == orxTEXT_MARKER_TYPE_COLOR)
+  {
+    orxVECTOR vColor = {0};
+    orxSTRING zNewPosition = _pstParserContext->zPositionInMarkedString;
+    /* TODO All of these (const orxSTRING *) casts really should be double-checked - I'm not sure it's the right way to go... */
+    orxSTATUS eStatus = orxString_ToVector(_pstParserContext->zPositionInMarkedString, &vColor, (const orxSTRING *)&zNewPosition);
+    _pstParserContext->zPositionInMarkedString = zNewPosition;
+    if (eStatus == orxSTATUS_FAILURE)
+    {
+      stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+    }
+    else
+    {
+      orxVector_Mulf(&vColor, &vColor, orxCOLOR_NORMALIZER);
+      orxCOLOR stColor = {vColor, 1.0f};
+      stResult.stRGBA = orxColor_ToRGBA(&stColor);
+    }
+  }
+  else if (_eType == orxTEXT_MARKER_TYPE_SCALE)
+  {
+    orxVECTOR vScale = {0};
+    orxSTATUS eStatus = orxString_ToVector(_pstParserContext->zPositionInMarkedString, &vScale, (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
+    if (eStatus == orxSTATUS_FAILURE)
+    {
+      stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+    }
+    else
+    {
+      stResult.vScale = vScale;
+    }
+  }
+  else if (_eType == orxTEXT_MARKER_TYPE_POP)
+  {
+    /* Currently marker stack manipulators possess no arguments, so trivially succeed */
+  }
+  else if (_eType == orxTEXT_MARKER_TYPE_CLEAR)
+  {
+    /* Currently marker stack manipulators possess no arguments, so trivially succeed */
+  }
+  else
+  {
+    orxASSERT(orxFALSE, "Invalid marker type [%d]!", _eType);
+  }
+
+  return stResult;
+}
+
+static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext, orxTEXT_MARKER_DATA stData)
+{
+  orxTEXT_MARKER *pstResult = (orxTEXT_MARKER *) orxBank_Allocate(_pstMarkerBank);
+  if (pstResult != orxNULL)
+  {
+    pstResult->u32Index = _pstParserContext->u32CharacterIndex;
+    pstResult->stData = stData;
+  }
+  return pstResult;
+}
+
+
+/** Attempt to parse a marker out of the string. If it isn't a marker, store the relevant characters in an output string.
+ * @param[in]   _pstMarkerBank       The bank to use for marker allocation.
+ * @param[in]   _pstParserContext    The parser context.
+ * @return orxTEXT_MARKER pointer if a marker is found / orxNULL if not
+ */
+static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+{
+  orxTEXT_MARKER *pstResult = orxNULL;
+
+  /* Does it look like a marker? */
+  if (_pstParserContext->u32CharacterCodePoint == orxTEXT_KC_MARKER_SYNTAX_START)
+  {
+    /* Peek at the next one */
+    orxU32 u32CurrentCharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString, orxNULL);
+    /* Is this an escape? */
+    if (u32CurrentCharacterCodePoint == orxTEXT_KC_MARKER_SYNTAX_START)
+    {
+      /* Do nothing - allow it to process as plaintext */
+    }
+    else
+    {
+      /* Attempt to parse marker type, which will also advance the string to the end of the type (if any) */
+      orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstParserContext);
+      /* If it's not a valid marker type */
+      if (eType == orxTEXT_MARKER_TYPE_NONE)
+      {
+        /* Do nothing - allow it to process as plaintext */
+      }
+      else
+      {
+        /* Try to parse marker data if any, which will also advance the string to the end of the data (if any) */
+        orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(eType, _pstParserContext);
+        /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
+        if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
+        {
+          /* Do nothing - allow it to process as plaintext */
+        }
+        else
+        {
+          orxASSERT(stData.eType == eType);
+          /* Create the marker */
+          pstResult = orxText_CreateMarker(_pstMarkerBank, _pstParserContext, stData);
+          if (pstResult == orxNULL)
+          {
+            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+          }
+        }
+      }
+    }
+  }
+  /* Process plaintext */
+
+  /* Increment the character index for marker creation */
+  _pstParserContext->u32CharacterIndex++;
+
+  /* Update the character codepoint and advance to the next */
+  _pstParserContext->u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString, (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
+  /* Append the codepoint to the output string, having skipped the current one so that the position in the original points to the next codepoint. */
+  orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, _pstParserContext->u32OutputSize, _pstParserContext->u32CharacterCodePoint);
+  /* Now skip the appended codepoint in the output string so that adding to it in the future doesn't overwrite anything. */
+  orxU32 u32AddedCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInOutputString, (const orxSTRING *)&_pstParserContext->zPositionInOutputString);
+  orxASSERT(u32AddedCodePoint == _pstParserContext->u32CharacterCodePoint);
+
+  return pstResult;
+}
 /** Updates text size
  * @param[in]   _pstText      Concerned text
  */
