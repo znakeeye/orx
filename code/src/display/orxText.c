@@ -684,7 +684,9 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               if (pstNode->u32MarkerDisambiguation > u32MaxIndex)
               {
                 u32MaxIndex = pstNode->u32MarkerDisambiguation;
-                eTopType = pstNewMarker->stData.eType;
+                const orxTEXT_MARKER *pstNodeMarker = pstNode->pstMarker;
+                orxASSERT(pstNodeMarker != orxNULL);
+                eTopType = pstNodeMarker->stData.eType;
               }
             }
           }
