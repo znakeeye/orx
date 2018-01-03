@@ -480,10 +480,8 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
   else if (_eType == orxTEXT_MARKER_TYPE_COLOR)
   {
     orxVECTOR vColor = {0};
-    orxSTRING zNewPosition = _pstParserContext->zPositionInMarkedString;
-    /* TODO All of these (const orxSTRING *) casts really should be double-checked - I'm not sure it's the right way to go... */
-    orxSTATUS eStatus = orxString_ToVector(_pstParserContext->zPositionInMarkedString, &vColor, (const orxSTRING *)&zNewPosition);
-    _pstParserContext->zPositionInMarkedString = zNewPosition;
+    orxSTATUS eStatus = orxString_ToVector(_pstParserContext->zPositionInMarkedString, &vColor,
+                                           (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
     if (eStatus == orxSTATUS_FAILURE)
     {
       stResult.eType = orxTEXT_MARKER_TYPE_NONE;
@@ -498,7 +496,8 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
   else if (_eType == orxTEXT_MARKER_TYPE_SCALE)
   {
     orxVECTOR vScale = {0};
-    orxSTATUS eStatus = orxString_ToVector(_pstParserContext->zPositionInMarkedString, &vScale, (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
+    orxSTATUS eStatus = orxString_ToVector(_pstParserContext->zPositionInMarkedString, &vScale,
+                                           (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
     if (eStatus == orxSTATUS_FAILURE)
     {
       stResult.eType = orxTEXT_MARKER_TYPE_NONE;
@@ -592,11 +591,14 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
   _pstParserContext->u32CharacterIndex++;
 
   /* Update the character codepoint and advance to the next */
-  _pstParserContext->u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString, (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
+  _pstParserContext->u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString,
+                                                                                  (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
+
   /* Append the codepoint to the output string, having skipped the current one so that the position in the original points to the next codepoint. */
   orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, _pstParserContext->u32OutputSize, _pstParserContext->u32CharacterCodePoint);
   /* Now skip the appended codepoint in the output string so that adding to it in the future doesn't overwrite anything. */
-  orxU32 u32AddedCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInOutputString, (const orxSTRING *)&_pstParserContext->zPositionInOutputString);
+  orxU32 u32AddedCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInOutputString,
+                                                                  (const orxSTRING *)&_pstParserContext->zPositionInOutputString);
   orxASSERT(u32AddedCodePoint == _pstParserContext->u32CharacterCodePoint);
 
   return pstResult;
