@@ -612,8 +612,12 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
  * @param[in]   _pstText      Concerned text
  * @return      A cleaned version of the current string for _pstText
  */
-static orxSTRING orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
+static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 {
+  if (_pstText->zString == orxNULL || *(_pstText->zString) == orxCHAR_NULL)
+  {
+    return;
+  }
   /* Stacks for each marker type - most recent marker is derived from the max character index among the tops of each stack. */
   orxLINKLIST  stMarkerStacks[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
   orxU32       u32ParsedStyleMarkerCount = 0;
@@ -742,7 +746,9 @@ static orxSTRING orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
       }
     }
   }
-  return zOutputString;
+  /* TODO Returns nothing - instead we update the zString to be the output string */
+  orxString_Delete(_pstText->zString);
+  _pstText->zString = zOutputString;
 }
 
 /** Updates text size
