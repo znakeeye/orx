@@ -678,7 +678,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           orxTEXT_MARKER_TYPE eTopType = orxTEXT_MARKER_TYPE_NONE;
           for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
           {
-            orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[pstNewMarker->stData.eType]);
+            orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eType]);
             if (pstNode != orxNULL)
             {
               if (pstNode->u32MarkerDisambiguation > u32MaxIndex)
