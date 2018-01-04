@@ -534,6 +534,10 @@ static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank
   return pstResult;
 }
 
+static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
+{
+  return orxString_GetFirstCharacterCodePoint(*_pzCursor, (const orxSTRING *)_pzCursor);
+}
 
 /** Attempt to parse a marker out of the string. If it isn't a marker, store the relevant characters in an output string.
  * @param[in]   _pstMarkerBank       The bank to use for marker allocation.
@@ -543,16 +547,20 @@ static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank
 static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxTEXT_MARKER *pstResult = orxNULL;
+  /* Update the character codepoint and advance to the next */
+  _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
 
   /* Does it look like a marker? */
   if (_pstParserContext->u32CharacterCodePoint == orxTEXT_KC_MARKER_SYNTAX_START)
   {
     /* Peek at the next one */
-    orxU32 u32CurrentCharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString, orxNULL);
+    orxU32 u32Peek = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString, orxNULL);
     /* Is this an escape? */
-    if (u32CurrentCharacterCodePoint == orxTEXT_KC_MARKER_SYNTAX_START)
+    if (u32Peek == orxTEXT_KC_MARKER_SYNTAX_START)
     {
-      /* Do nothing - allow it to process as plaintext */
+      /* Skip over the peeked codepoint */
+      _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+      /* Do nothing - allow it to process this codepoint as plaintext */
     }
     else
     {
@@ -581,25 +589,21 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
           {
             orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
           }
+          return pstResult;
         }
       }
     }
   }
   /* Process plaintext */
 
-  /* Increment the character index for marker creation */
-  _pstParserContext->u32CharacterIndex++;
-
-  /* Update the character codepoint and advance to the next */
-  _pstParserContext->u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString,
-                                                                                  (const orxSTRING *)&_pstParserContext->zPositionInMarkedString);
-
   /* Append the codepoint to the output string, having skipped the current one so that the position in the original points to the next codepoint. */
   orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, _pstParserContext->u32OutputSize, _pstParserContext->u32CharacterCodePoint);
   /* Now skip the appended codepoint in the output string so that adding to it in the future doesn't overwrite anything. */
-  orxU32 u32AddedCodePoint = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInOutputString,
-                                                                  (const orxSTRING *)&_pstParserContext->zPositionInOutputString);
+  orxU32 u32AddedCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInOutputString);
   orxASSERT(u32AddedCodePoint == _pstParserContext->u32CharacterCodePoint);
+
+  /* Increment the character index for marker creation */
+  _pstParserContext->u32CharacterIndex++;
 
   return pstResult;
 }
