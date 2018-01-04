@@ -670,11 +670,11 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   orxMemory_Zero(zOutputString, u32OutputStringSize);
 
   orxTEXT_MARKER_PARSER_CONTEXT stContext = {0};
-  stContext.u32CharacterCodePoint = orxU32_UNDEFINED;
   stContext.u32OutputSize = u32OutputStringSize;
+  stContext.u32CharacterCodePoint = orxU32_UNDEFINED;
   stContext.u32CharacterIndex = 0;
-  stContext.zPositionInOutputString = zOutputString;
   stContext.zPositionInMarkedString = _pstText->zString;
+  stContext.zPositionInOutputString = zOutputString;
 
   /* Walk UTF-8 encoded string */
   while (stContext.u32CharacterCodePoint != orxCHAR_NULL)
