@@ -547,6 +547,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank
 
 static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
 {
+  orxASSERT(_pzCursor != orxNULL);
   return orxString_GetFirstCharacterCodePoint(*_pzCursor, (const orxSTRING *)_pzCursor);
 }
 
@@ -558,6 +559,10 @@ static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
 static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxTEXT_MARKER *pstResult = orxNULL;
+  orxASSERT(_pstParserContext != orxNULL);
+  orxASSERT(_pstParserContext->zPositionInMarkedString != orxNULL);
+  orxASSERT(_pstParserContext->zPositionInOutputString != orxNULL);
+
   /* Update the character codepoint and advance to the next */
   _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
 
