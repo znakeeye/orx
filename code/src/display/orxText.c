@@ -580,6 +580,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
     }
     else
     {
+      /* NOTE The following logic does a lot of "if (eType == orxTEXT_MARKER_TYPE_NONE || zSomeOutputString == orxNULL)" and I'm not sure this is going to always be OK. See next note. */
       orxSTRING zEndOfType = orxNULL;
       /* Attempt to parse marker type, which will also advance the string to the first char after the type (if any) */
       orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstParserContext->zPositionInMarkedString, (const orxSTRING *)&zEndOfType);
@@ -593,7 +594,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
         orxSTRING zEndOfValue = orxNULL;
         /* Try to parse marker data if any, which will also advance the string to the first char after the data (if any) */
         orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(eType, zEndOfType, (const orxSTRING *)&zEndOfValue);
-        /* I noticed that with font in particular, there are two different behaviours currently specified on failure (though not implemented)
+        /* NOTE I noticed that with font in particular, there are two different behaviours currently specified on failure (though not implemented)
            If the font is invalid it logs a debug message but notes that it should *ignore* the marker as opposed to printing it as plaintext */
         /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
         if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
