@@ -738,29 +738,30 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           /* Find the marker that we'll be falling back to. */
           orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eTopType]);
           orxASSERT((pstNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", eTopType);
-          orxTEXT_MARKER_DATA stPreviousMarkerDataOfType;
-          orxMemory_Zero(&stPreviousMarkerDataOfType, sizeof(stPreviousMarkerDataOfType));
-          orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetPrevious((orxLINKLIST_NODE *) pstNode);
           /* Pop stack */
           orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstNode);
           orxASSERT(eOK == orxSTATUS_SUCCESS);
           orxBank_Free(pstMarkerNodeBank, pstNode);
           pstNode = orxNULL;
+          /* Now get the node that's being fallen back to (if any) */
+          orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eTopType]);
+          orxTEXT_MARKER_DATA stFallbackData;
           /* Check fallback */
           if (pstFallbackNode == orxNULL)
           {
             /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
-            stPreviousMarkerDataOfType.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
-            stPreviousMarkerDataOfType.eTypeOfDefault = eTopType;
+            stFallbackData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+            stFallbackData.eTypeOfDefault = eTopType;
           }
           else
           {
             /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
-            stPreviousMarkerDataOfType = pstFallbackNode->pstMarker->stData;
+            stFallbackData = pstFallbackNode->pstMarker->stData;
           }
           /* Modify the new marker to change from a stack pop to whatever it translates into before adding it to the marker array */
-          pstNewMarker->stData = stPreviousMarkerDataOfType;
-          /* TODO add to array */
+          pstNewMarker->stData = stFallbackData;
+
+          /* TODO add to list */
         }
         else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
         {
