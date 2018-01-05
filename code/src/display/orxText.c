@@ -734,10 +734,10 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
             /* TODO log warning */
             break;
           }
-          orxASSERT(orxText_MarkerTypeIsStyle(eTopType), "Most recently pushed marker type [%d] is not a style? How?", eTopType);
+          orxASSERT(orxText_MarkerTypeIsStyle(eTopType) && "Most recently pushed marker type [%d] is not a style? How?", eTopType);
           /* Find the marker that we'll be falling back to. */
           orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eTopType]);
-          orxASSERT(pstNode != orxNULL, "Marker type [%d] was ostensibly valid, how can the top node for it be null?", eTopType);
+          orxASSERT((pstNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", eTopType);
           if (pstNode == orxNULL)
           {
             /* TODO log warning */
@@ -777,12 +777,12 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         }
         else
         {
-          orxASSERT(orxFALSE, "Impossible marker type [%d]", pstNewMarker->stData.eType);
+          orxASSERT(orxFALSE && "Impossible marker type [%d]", pstNewMarker->stData.eType);
         }
       }
       else
       {
-        orxASSERT(orxFALSE, "Impossible marker type [%d]", pstNewMarker->stData.eType);
+        orxASSERT(orxFALSE && "Impossible marker type [%d]", pstNewMarker->stData.eType);
       }
     }
   }
