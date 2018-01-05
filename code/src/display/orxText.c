@@ -700,7 +700,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 
         orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
 
-        /* TODO Add marker to the marker array */
+        /* TODO Add marker to a list */
 
       }
       else if (orxText_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
