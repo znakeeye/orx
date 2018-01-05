@@ -738,11 +738,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           /* Find the marker that we'll be falling back to. */
           orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eTopType]);
           orxASSERT((pstNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", eTopType);
-          if (pstNode == orxNULL)
-          {
-            /* TODO log warning */
-            break;
-          }
           orxTEXT_MARKER_DATA stPreviousMarkerDataOfType;
           orxMemory_Zero(&stPreviousMarkerDataOfType, sizeof(stPreviousMarkerDataOfType));
           orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetPrevious((orxLINKLIST_NODE *) pstNode);
