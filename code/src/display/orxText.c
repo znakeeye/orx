@@ -773,7 +773,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         }
         else
         {
-          orxASSERT(orxFALSE && "Impossible marker type [%d]", pstNewMarker->stData.eType);
+          orxASSERT(orxFALSE && "Unimplemented marker type [%d]", pstNewMarker->stData.eType);
         }
       }
       else
