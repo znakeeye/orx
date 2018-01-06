@@ -748,7 +748,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           /* Now get the node that's being fallen back to (if any) */
           orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
           orxTEXT_MARKER_DATA stFallbackData;
-          orxMemory_Zero(&stFallbackData);
+          orxMemory_Zero(&stFallbackData, sizeof(stFallbackData));
           /* Change the pop marker into whatever it needs to fall back to */
           if (pstFallbackNode == orxNULL)
           {
@@ -777,7 +777,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
             if (orxLinkList_GetCounter(&stMarkerStacks[eType]) > 0)
             {
               orxTEXT_MARKER_DATA stData;
-              orxMemory_Zero(&stData);
+              orxMemory_Zero(&stData, sizeof(stData));
               stData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
               orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, &stContext, stData);
