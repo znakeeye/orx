@@ -732,7 +732,10 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           if (eTopType == orxTEXT_MARKER_TYPE_NONE)
           {
             /* TODO log warning */
-            break;
+            /* Free the useless marker */
+            orxBank_Free(pstMarkerBank, pstNewMarker);
+            pstNewMarker = orxNULL;
+            continue;
           }
           orxASSERT(orxText_MarkerTypeIsStyle(eTopType) && "Most recently pushed marker type [%d] is not a style? How?", eTopType);
           /* Find the marker that we'll be falling back to. */
