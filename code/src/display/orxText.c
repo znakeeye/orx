@@ -800,6 +800,8 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
     orxASSERT(pstMarker && "There was a rift in the marker bank at index [%u]! Should be impossible.", u32Index);
     orxMemory_Copy(&_pstText->pstMarkerArray[u32Index], pstMarker, sizeof(orxTEXT_MARKER));
   }
+  orxBank_Delete(pstMarkerBank);
+  orxBank_Delete(pstMarkerNodeBank);
   orxString_Delete(_pstText->zString);
   _pstText->zString = zOutputString;
 }
