@@ -30,9 +30,7 @@
  * Object creation tutorial
  */
 
-
 #include "orx.h"
-
 
 /* This is a basic C tutorial creating a viewport and an object.
  *
@@ -82,7 +80,9 @@ void DebugText(const orxTEXT *_pstText)
     }
   }
 }
-void ReloadTexts() {
+
+void ReloadTexts()
+{
   /* Gets first text */
   orxTEXT *pstText = orxTEXT(orxStructure_GetFirst(orxSTRUCTURE_ID_TEXT));
 
@@ -152,14 +152,14 @@ orxSTATUS orxFASTCALL Run()
   orxSTATUS eResult = orxSTATUS_SUCCESS;
 
   /* Screenshot? */
-  if(orxInput_IsActive("Screenshot") && orxInput_HasNewStatus("Screenshot"))
+  if (orxInput_IsActive("Screenshot") && orxInput_HasNewStatus("Screenshot"))
   {
     /* Captures it */
     orxScreenshot_Capture();
   }
 
   /* Should quit? */
-  if(orxInput_IsActive("Quit"))
+  if (orxInput_IsActive("Quit"))
   {
     /* Updates result */
     eResult = orxSTATUS_FAILURE;
