@@ -102,9 +102,14 @@ void ReloadTexts() {
   }
 }
 
+static orxOBJECT *pstScene = orxNULL;
+
 orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
   orxSTATUS eResult = orxSTATUS_SUCCESS;
-  if (_pstEvent->eID == orxRESOURCE_EVENT_UPDATE) {
+  if (_pstEvent->eID == orxRESOURCE_EVENT_UPDATE)
+  {
+    orxObject_SetLifeTime(pstScene, orxFLOAT_0);
+    pstScene = orxObject_CreateFromConfig("Scene");
     ReloadTexts();
   }
   return eResult;
@@ -120,17 +125,22 @@ orxSTATUS orxFASTCALL Init()
          "\n* After changing them, relaunch the tutorial to see their effects");
 
   orxEvent_AddHandler(orxEVENT_TYPE_RESOURCE, ConfigEventHandler);
+
   /* Creates viewport */
   orxViewport_CreateFromConfig("Viewport");
 
   /* Creates object */
-  orxObject_CreateFromConfig("Scene");
+  pstScene = orxObject_CreateFromConfig("Scene");
 
+#if 0
   orxOBJECT *pstMyTextObject = orxObject_CreateFromConfig("TextObject");
   orxGRAPHIC *pstGraphic = orxGRAPHIC(orxOBJECT_GET_STRUCTURE( pstMyTextObject, GRAPHIC) ) ;
 	orxSTRUCTURE *pstStructure = orxGraphic_GetData( pstGraphic );
   pstTestText = orxTEXT(pstStructure);
+#endif
+
   ReloadTexts();
+
   /* Done! */
   return orxSTATUS_SUCCESS;
 }
