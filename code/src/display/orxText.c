@@ -97,7 +97,7 @@ struct __orxTEXT_t
   orxSTRUCTURE      stStructure;                /**< Public structure, first structure member : 40 / 64 */
   orxSTRING         zString;                    /**< String : 44 / 72 */
   orxFONT          *pstFont;                    /**< Font : 48 / 80 */
-  orxTEXT_MARKER   *pstMarkers;
+  orxTEXT_MARKER   *pstMarkerArray;
   orxU32            u32MarkerCounter;
   orxFLOAT          fWidth;                     /**< Width : 52 / 84 */
   orxFLOAT          fHeight;                    /**< Height : 56 / 88 */
@@ -1181,7 +1181,7 @@ orxTEXT *orxFASTCALL orxText_Create()
     pstResult->zString          = orxNULL;
     pstResult->pstFont          = orxNULL;
     pstResult->zOriginalString  = orxNULL;
-    pstResult->pstMarkers       = orxNULL;
+    pstResult->pstMarkerArray   = orxNULL;
     pstResult->u32MarkerCounter = 0;
 
     /* Inits flags */
@@ -1669,10 +1669,10 @@ orxSTATUS orxFASTCALL orxText_SetString(orxTEXT *_pstText, const orxSTRING _zStr
     }
   }
 
-  if (_pstText->pstMarkers != orxNULL)
+  if (_pstText->pstMarkerArray != orxNULL)
   {
-    orxMemory_Free(_pstText->pstMarkers);
-    _pstText->pstMarkers = orxNULL;
+    orxMemory_Free(_pstText->pstMarkerArray);
+    _pstText->pstMarkerArray = orxNULL;
     _pstText->u32MarkerCounter = 0;
   }
 
@@ -1782,7 +1782,7 @@ const orxTEXT_MARKER *orxFASTCALL orxText_GetMarkerArray(const orxTEXT *_pstText
   orxSTRUCTURE_ASSERT(_pstText);
 
   /* Update result */
-  pstResult = _pstText->pstMarkers;
+  pstResult = _pstText->pstMarkerArray;
 
   /* Done! */
   return pstResult;
