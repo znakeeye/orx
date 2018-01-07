@@ -830,6 +830,11 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     _pstText->zOriginalString = orxNULL;
   }
 
+  orxTEXT_MARKER_DATA stLineData;
+  orxMemory_Zero(&stLineData, sizeof(stLineData));
+  stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
+  stLineData.fLineHeight = 0;
+
   /* Has string and font? */
   if((_pstText->zString != orxNULL) && (_pstText->zString != orxSTRING_EMPTY) && (_pstText->pstFont != orxNULL))
   {
