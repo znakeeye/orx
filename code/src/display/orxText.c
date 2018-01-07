@@ -900,6 +900,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     }
     else
     {
+    /* NOTE it looks to me like the height is not expanding properly when line breaks get added, at least according to physics debugging */
       orxCHAR  *pc;
       orxSTRING zLastSpace;
 
