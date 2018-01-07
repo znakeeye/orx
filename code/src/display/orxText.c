@@ -545,6 +545,27 @@ static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank
   return pstResult;
 }
 
+static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(orxBANK *_pstMarkerBank, orxU32 *_pstArraySizeOut)
+{
+  orxASSERT(_pstMarkerBank != orxNULL);
+  orxASSERT(_pstArraySizeOut != orxNULL);
+  orxTEXT_MARKER *pstMarkerArray = orxNULL;
+  orxU32 u32MarkerCounter = orxBank_GetCounter(_pstMarkerBank);
+  orxU32 u32ArraySize = u32MarkerCounter * sizeof(orxTEXT_MARKER);
+  if (u32ArraySize > 0)
+  {
+    pstMarkerArray = (orxTEXT_MARKER *) orxMemory_Allocate(u32ArraySize, orxMEMORY_TYPE_MAIN);
+    for (orxU32 u32Index = 0; u32Index < u32MarkerCounter; u32Index++)
+    {
+      orxTEXT_MARKER *pstMarker = (orxTEXT_MARKER *) orxBank_GetAtIndex(_pstMarkerBank, u32Index);
+      orxASSERT(pstMarker && "There was a rift in the marker bank at index [%u]! Should be impossible.", u32Index);
+      orxMemory_Copy(&pstMarkerArray[u32Index], pstMarker, sizeof(orxTEXT_MARKER));
+    }
+  }
+  *_pstArraySizeOut = u32MarkerCounter;
+  return pstMarkerArray;
+}
+
 static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
 {
   orxASSERT(_pzCursor != orxNULL);
@@ -791,15 +812,9 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
     }
   }
 
-  _pstText->u32MarkerCounter = orxBank_GetCounter(pstMarkerBank);
-  orxU32 u32ArraySize = _pstText->u32MarkerCounter * sizeof(orxTEXT_MARKER);
-  _pstText->pstMarkerArray = (orxTEXT_MARKER *) orxMemory_Allocate(u32ArraySize, orxMEMORY_TYPE_MAIN);
-  for (orxU32 u32Index = 0; u32Index < _pstText->u32MarkerCounter; u32Index++)
-  {
-    orxTEXT_MARKER *pstMarker = (orxTEXT_MARKER *) orxBank_GetAtIndex(pstMarkerBank, u32Index);
-    orxASSERT(pstMarker && "There was a rift in the marker bank at index [%u]! Should be impossible.", u32Index);
-    orxMemory_Copy(&_pstText->pstMarkerArray[u32Index], pstMarker, sizeof(orxTEXT_MARKER));
-  }
+  /* Store the marker array from the bank */
+  _pstText->pstMarkerArray = orxText_ConvertBankToArray(pstMarkerBank, &_pstText->u32MarkerCounter);
+
   orxBank_Delete(pstMarkerBank);
   orxBank_Delete(pstMarkerNodeBank);
   /* TODO double check whether escapes screw up offsets for markers */
