@@ -797,6 +797,16 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
     }
   }
   /* TODO Returns nothing - instead we update the zString to be the output string */
+
+  _pstText->u32MarkerCounter = orxBank_GetCounter(pstMarkerBank);
+  orxU32 u32ArraySize = _pstText->u32MarkerCounter * sizeof(orxTEXT_MARKER);
+  _pstText->pstMarkerArray = (orxTEXT_MARKER *) orxMemory_Allocate(u32ArraySize, orxMEMORY_TYPE_MAIN);
+  for (orxU32 u32Index = 0; u32Index < _pstText->u32MarkerCounter; u32Index++)
+  {
+    orxTEXT_MARKER *pstMarker = (orxTEXT_MARKER *) orxBank_GetAtIndex(pstMarkerBank, u32Index);
+    orxASSERT(pstMarker && "There was a rift in the marker bank at index [%u]! Should be impossible.", u32Index);
+    orxMemory_Copy(&_pstText->pstMarkerArray[u32Index], pstMarker, sizeof(orxTEXT_MARKER));
+  }
   orxString_Delete(_pstText->zString);
   _pstText->zString = zOutputString;
 }
