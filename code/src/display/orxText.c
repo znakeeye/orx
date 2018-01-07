@@ -699,9 +699,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         pstNode->u32MarkerTally = u32StyleMarkerTally;
 
         orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
-
-        /* TODO Add marker to a list */
-
       }
       else if (orxText_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
       {
@@ -763,8 +760,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           }
           /* Modify the new marker to change from a stack pop to whatever it translates into before adding it to the marker array */
           pstNewMarker->stData = stFallbackData;
-
-          /* TODO add to list */
         }
         else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
         {
@@ -781,7 +776,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               stData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
               orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, &stContext, stData);
-              /* TODO Add to marker list */
             }
           }
         }
@@ -796,7 +790,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
       }
     }
   }
-  /* TODO Returns nothing - instead we update the zString to be the output string */
 
   _pstText->u32MarkerCounter = orxBank_GetCounter(pstMarkerBank);
   orxU32 u32ArraySize = _pstText->u32MarkerCounter * sizeof(orxTEXT_MARKER);
