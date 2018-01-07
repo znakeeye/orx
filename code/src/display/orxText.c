@@ -845,10 +845,18 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     _pstText->zOriginalString = orxNULL;
   }
 
-  orxTEXT_MARKER_DATA stLineData;
+  orxBANK        *pstNewMarkerBank;
+  /* Initialize the new marker bank used for building an updated marker list with line height markers */
+  pstNewMarkerBank = orxBank_Create(orxTEXT_KU32_MARKER_DATA_BANK_SIZE, sizeof(orxTEXT_MARKER),
+                                    orxBANK_KU32_FLAG_NONE, orxMEMORY_TYPE_MAIN);
+
   orxMemory_Zero(&stLineData, sizeof(stLineData));
   stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
   stLineData.fLineHeight = 0;
+
+
+  /* Needed for keeping track of what marker we're on */
+  orxU32 u32CharacterIndex, u32MarkerIndex;
 
   /* Has string and font? */
   if((_pstText->zString != orxNULL) && (_pstText->zString != orxSTRING_EMPTY) && (_pstText->pstFont != orxNULL))
@@ -865,11 +873,35 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       const orxCHAR  *pc;
       orxFLOAT        fMaxWidth;
 
+      /* Add a line height marker for the first line, which will get updated with a running maximum height
+         for the current line until next line is hit, at which point a new line marker will be added and
+         replace it repeating the same process. */
+      orxTEXT_MARKER_DATA stLineData;
+      stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
+      stLineData.fLineHeight = fCharacterHeight;
+      orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, stLineData);
+
       /* For all characters */
-      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0;
+      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0, u32CharacterIndex = 0, u32MarkerIndex = 0;
           u32CharacterCodePoint != orxCHAR_NULL;
-          u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
+          u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc), u32CharacterIndex++)
       {
+        /* Are there any markers at all? */
+        if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0))
+        {
+          orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+          /* Are we on a marker? We use while because there may be more than one marker on the same character index. */
+          while (stMarker.u32Index == u32CharacterIndex)
+          {
+            orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Index, stMarker.stData);
+            pstNewMarker->u32Index = stMarker.u32Index;
+            u32MarkerIndex++;
+            stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+          }
+        }
+
+        /* TODO should we verify somehow that a marker cannot appear between a \r and \n? */
+        /* TODO be sure to have line markers added on consistent sides of newline characters */
         /* Depending on character */
         switch(u32CharacterCodePoint)
         {
@@ -878,8 +910,9 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* Half EOL? */
             if(*pc == orxCHAR_LF)
             {
-              /* Updates pointer */
+              /* Updates pointer and index */
               pc++;
+              u32CharacterIndex++;
             }
 
             /* Fall through */
@@ -888,13 +921,19 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           case orxCHAR_LF:
           {
             /* Updates height */
-            fHeight += fCharacterHeight;
+            fHeight += pstLineMarker->stData.fLineHeight;
 
             /* Updates max width */
             fMaxWidth = orxMAX(fMaxWidth, fWidth);
 
             /* Resets width */
             fWidth = orxFLOAT_0;
+
+            /* Add a new line marker, replacing the reference to the previous one */
+            orxTEXT_MARKER_DATA stData;
+            stData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
+            stData.fLineHeight = fCharacterHeight;
+            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CharacterIndex, stData);
 
             break;
           }
@@ -1051,6 +1090,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       _pstText->fHeight = orxFLOAT_0;
     }
   }
+
+  /* Replace the old marker array with the new one */
+  orxMemory_Free(_pstText->pstMarkerArray);
+  _pstText->pstMarkerArray = orxText_ConvertBankToArray(pstNewMarkerBank, &_pstText->u32MarkerCounter);
 
   /* Done! */
   return;
