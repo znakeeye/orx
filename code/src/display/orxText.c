@@ -534,13 +534,13 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
   return stResult;
 }
 
-static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext, orxTEXT_MARKER_DATA stData)
+static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32CharacterIndex, orxTEXT_MARKER_DATA _stData)
 {
   orxTEXT_MARKER *pstResult = (orxTEXT_MARKER *) orxBank_Allocate(_pstMarkerBank);
   if (pstResult != orxNULL)
   {
-    pstResult->u32Index = _pstParserContext->u32CharacterIndex;
-    pstResult->stData = stData;
+    pstResult->u32Index = _u32CharacterIndex;
+    pstResult->stData   = _stData;
   }
   return pstResult;
 }
@@ -618,7 +618,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
             _pstParserContext->zPositionInMarkedString = zEndOfType;
           }
           /* Create the marker */
-          pstResult = orxText_CreateMarker(_pstMarkerBank, _pstParserContext, stData);
+          pstResult = orxText_CreateMarker(_pstMarkerBank, _pstParserContext->u32CharacterIndex, stData);
           if (pstResult == orxNULL)
           {
             orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -775,7 +775,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               orxMemory_Zero(&stData, sizeof(stData));
               stData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
-              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, &stContext, stData);
+              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, stContext.u32CharacterIndex, stData);
             }
           }
         }
