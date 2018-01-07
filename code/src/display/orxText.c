@@ -802,6 +802,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   }
   orxBank_Delete(pstMarkerBank);
   orxBank_Delete(pstMarkerNodeBank);
+  /* TODO double check whether escapes screw up offsets for markers */
   orxString_Delete(_pstText->zString);
   _pstText->zString = zOutputString;
 }
