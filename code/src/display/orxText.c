@@ -845,41 +845,37 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     _pstText->zOriginalString = orxNULL;
   }
 
-  orxBANK        *pstNewMarkerBank;
-  /* Initialize the new marker bank used for building an updated marker list with line height markers */
-  pstNewMarkerBank = orxBank_Create(orxTEXT_KU32_MARKER_DATA_BANK_SIZE, sizeof(orxTEXT_MARKER),
-                                    orxBANK_KU32_FLAG_NONE, orxMEMORY_TYPE_MAIN);
-
-  orxMemory_Zero(&stLineData, sizeof(stLineData));
-  stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
-  stLineData.fLineHeight = 0;
-
-
-  /* Needed for keeping track of what marker we're on */
-  orxU32 u32CharacterIndex, u32MarkerIndex;
-
   /* Has string and font? */
   if((_pstText->zString != orxNULL) && (_pstText->zString != orxSTRING_EMPTY) && (_pstText->pstFont != orxNULL))
   {
     orxFLOAT        fWidth, fHeight, fCharacterHeight;
     orxU32          u32CharacterCodePoint;
 
+    /* Used for building a new marker array that contains line markers */
+    orxBANK        *pstNewMarkerBank;
+    /* Needed for keeping track of what marker we're on */
+    orxU32 u32CharacterIndex, u32MarkerIndex;
+
     /* Gets character height */
     fCharacterHeight = orxFont_GetCharacterHeight(_pstText->pstFont);
+
+    pstNewMarkerBank = orxBank_Create(orxTEXT_KU32_MARKER_DATA_BANK_SIZE, sizeof(orxTEXT_MARKER),
+                                      orxBANK_KU32_FLAG_NONE, orxMEMORY_TYPE_MAIN);
+
+    /* Add a line height marker for the first line, which will get updated with a running maximum height
+       for the current line until next line is hit, at which point a new line marker will be added and
+       replace it repeating the same process. */
+    orxTEXT_MARKER_DATA stLineData;
+    orxMemory_Zero(&stLineData, sizeof(stLineData));
+    stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
+    stLineData.fLineHeight = fCharacterHeight;
+    orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, stLineData);
 
     /* No fixed size? */
     if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_WIDTH | orxTEXT_KU32_FLAG_FIXED_HEIGHT) == orxFALSE)
     {
       const orxCHAR  *pc;
       orxFLOAT        fMaxWidth;
-
-      /* Add a line height marker for the first line, which will get updated with a running maximum height
-         for the current line until next line is hit, at which point a new line marker will be added and
-         replace it repeating the same process. */
-      orxTEXT_MARKER_DATA stLineData;
-      stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
-      stLineData.fLineHeight = fCharacterHeight;
-      orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, stLineData);
 
       /* For all characters */
       for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0, u32CharacterIndex = 0, u32MarkerIndex = 0;
@@ -899,7 +895,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           }
         }
-
         /* TODO should we verify somehow that a marker cannot appear between a \r and \n? */
         /* TODO be sure to have line markers added on consistent sides of newline characters */
         /* Depending on character */
@@ -1073,6 +1068,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         _pstText->fHeight = fHeight;
       }
     }
+
+    /* Replace the old marker array with the new one */
+    orxMemory_Free(_pstText->pstMarkerArray);
+    _pstText->pstMarkerArray = orxText_ConvertBankToArray(pstNewMarkerBank, &_pstText->u32MarkerCounter);
   }
   else
   {
@@ -1090,10 +1089,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       _pstText->fHeight = orxFLOAT_0;
     }
   }
-
-  /* Replace the old marker array with the new one */
-  orxMemory_Free(_pstText->pstMarkerArray);
-  _pstText->pstMarkerArray = orxText_ConvertBankToArray(pstNewMarkerBank, &_pstText->u32MarkerCounter);
 
   /* Done! */
   return;
