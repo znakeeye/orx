@@ -881,8 +881,8 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           u32CharacterCodePoint != orxCHAR_NULL;
           u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
       {
-        /* Are there any markers at all? */
-        if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0))
+        /* Are there any markers at all? Have we traversed all of them? */
+        if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0) && (u32MarkerIndex < _pstText->u32MarkerCounter))
         {
           orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           orxU32 u32CurrentOffset = (pc - _pstText->zString);
