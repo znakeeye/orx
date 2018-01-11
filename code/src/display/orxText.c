@@ -380,7 +380,7 @@ typedef struct __orxTEXT_MARKER_PARSER_CONTEXT_t
 {
   orxU32    u32OutputSize;           /** The size of the output string */
   orxU32    u32CharacterCodePoint;   /** The current codepoint to analyze */
-  orxU32    u32CharacterIndex;       /** The current character index of the output string for the next created marker to be inserted at */
+  orxSTRING zOutputString;           /** The start of the output string so that pointer arithmetic can be performed to attain byte offset */
   orxSTRING zPositionInMarkedString; /** Cursor for the next codepoint in the marked string */
   orxSTRING zPositionInOutputString; /** Cursor for the next empty space in the output string */
 } orxTEXT_MARKER_PARSER_CONTEXT;
@@ -534,13 +534,13 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
   return stResult;
 }
 
-static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32CharacterIndex, orxTEXT_MARKER_DATA _stData)
+static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32Offset, orxTEXT_MARKER_DATA _stData)
 {
   orxTEXT_MARKER *pstResult = (orxTEXT_MARKER *) orxBank_Allocate(_pstMarkerBank);
   if (pstResult != orxNULL)
   {
-    pstResult->u32Index = _u32CharacterIndex;
-    pstResult->stData   = _stData;
+    pstResult->u32Offset = _u32Offset;
+    pstResult->stData    = _stData;
   }
   return pstResult;
 }
@@ -639,7 +639,8 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
             _pstParserContext->zPositionInMarkedString = zEndOfType;
           }
           /* Create the marker */
-          pstResult = orxText_CreateMarker(_pstMarkerBank, _pstParserContext->u32CharacterIndex, stData);
+          orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+          pstResult = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, stData);
           if (pstResult == orxNULL)
           {
             orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -656,9 +657,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
   /* Now skip the appended codepoint in the output string so that adding to it in the future doesn't overwrite anything. */
   orxU32 u32AddedCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInOutputString);
   orxASSERT(u32AddedCodePoint == _pstParserContext->u32CharacterCodePoint);
-
-  /* Increment the character index for marker creation */
-  _pstParserContext->u32CharacterIndex++;
 
   return pstResult;
 }
@@ -694,7 +692,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   orxTEXT_MARKER_PARSER_CONTEXT stContext = {0};
   stContext.u32OutputSize = u32OutputStringSize;
   stContext.u32CharacterCodePoint = orxU32_UNDEFINED;
-  stContext.u32CharacterIndex = 0;
+  stContext.zOutputString = zOutputString;
   stContext.zPositionInMarkedString = _pstText->zString;
   stContext.zPositionInOutputString = zOutputString;
 
@@ -796,7 +794,8 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               orxMemory_Zero(&stData, sizeof(stData));
               stData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
-              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, stContext.u32CharacterIndex, stData);
+              orxU32 u32CurrentOffset = (stContext.zPositionInOutputString - stContext.zOutputString);
+              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, u32CurrentOffset, stData);
             }
           }
         }
@@ -854,7 +853,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     /* Used for building a new marker array that contains line markers */
     orxBANK        *pstNewMarkerBank;
     /* Needed for keeping track of what marker we're on */
-    orxU32 u32CharacterIndex, u32MarkerIndex;
+    orxU32 u32MarkerIndex;
 
     /* Gets character height */
     fCharacterHeight = orxFont_GetCharacterHeight(_pstText->pstFont);
@@ -878,19 +877,20 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       orxFLOAT        fMaxWidth;
 
       /* For all characters */
-      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0, u32CharacterIndex = 0, u32MarkerIndex = 0;
+      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0, u32MarkerIndex = 0;
           u32CharacterCodePoint != orxCHAR_NULL;
-          u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc), u32CharacterIndex++)
+          u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
       {
         /* Are there any markers at all? */
         if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0))
         {
           orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+          orxU32 u32CurrentOffset = (pc - _pstText->zString);
           /* Are we on a marker? We use while because there may be more than one marker on the same character index. */
-          while (stMarker.u32Index == u32CharacterIndex)
+          while (stMarker.u32Offset == u32CurrentOffset)
           {
-            orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Index, stMarker.stData);
-            pstNewMarker->u32Index = stMarker.u32Index;
+            orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+            pstNewMarker->u32Offset = stMarker.u32Offset;
             u32MarkerIndex++;
             stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           }
@@ -907,7 +907,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             {
               /* Updates pointer and index */
               pc++;
-              u32CharacterIndex++;
             }
 
             /* Fall through */
@@ -928,7 +927,8 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             orxTEXT_MARKER_DATA stData;
             stData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
             stData.fLineHeight = fCharacterHeight;
-            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CharacterIndex, stData);
+            orxU32 u32CurrentOffset = (pc - _pstText->zString);
+            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset, stData);
 
             break;
           }

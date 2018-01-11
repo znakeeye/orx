@@ -57,7 +57,7 @@ void DebugText(const orxTEXT *_pstText)
   for (orxU32 u32Index = 0; u32Index < u32MarkerCount; u32Index++)
   {
     const orxTEXT_MARKER stMarker = pstMarkerArray[u32Index];
-    orxLOG("Marker @ %u", stMarker.u32Index);
+    orxLOG("Marker @ %u", stMarker.u32Offset);
     switch (stMarker.stData.eType)
     {
     case orxTEXT_MARKER_TYPE_FONT:

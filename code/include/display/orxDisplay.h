@@ -214,7 +214,7 @@ typedef struct __orxTEXT_MARKER_DATA_t {
 /** Text marker structure */
 typedef struct __orxTEXT_MARKER_t
 {
-  orxU32                 u32Index;
+  orxU32                 u32Offset;
   orxTEXT_MARKER_DATA    stData;
 } orxTEXT_MARKER;
 
