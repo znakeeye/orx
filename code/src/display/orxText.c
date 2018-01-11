@@ -886,7 +886,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         {
           orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           orxU32 u32CurrentOffset = (pc - _pstText->zString);
-          /* Are we on a marker? We use while because there may be more than one marker on the same character index. */
+          /* There may be more than one marker at this offset. */
           while (stMarker.u32Offset == u32CurrentOffset)
           {
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
