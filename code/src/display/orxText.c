@@ -982,6 +982,8 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           }
         }
       }
+      /* Line height still needs to be applied for the final line */
+      fHeight += pstLineMarker->stData.fLineHeight;
 
       /* Stores values */
       _pstText->fWidth  = orxMAX(fWidth, fMaxWidth);
