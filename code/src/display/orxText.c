@@ -879,7 +879,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       orxTEXT_MARKER *apstAppliedMarkers[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
 
       /* For all characters */
-      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0, u32MarkerIndex = 0;
+      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fWidth = fMaxWidth = orxFLOAT_0, u32MarkerIndex = 0;
           u32CharacterCodePoint != orxCHAR_NULL;
           u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
       {
