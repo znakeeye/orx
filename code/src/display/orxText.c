@@ -867,7 +867,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     orxTEXT_MARKER_DATA stLineData;
     orxMemory_Zero(&stLineData, sizeof(stLineData));
     stLineData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
-    stLineData.fLineHeight = fCharacterHeight;
+    stLineData.fLineHeight = orxFLOAT_0;
     orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, stLineData);
 
     /* No fixed size? */
@@ -966,8 +966,8 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* Add a new line marker, replacing the reference to the previous one */
             orxTEXT_MARKER_DATA stData;
             stData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
-            stData.fLineHeight = fCharacterHeight;
             orxU32 u32CurrentOffset = (pc - _pstText->zString);
+            stData.fLineHeight = orxFLOAT_0;
             pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset, stData);
 
             break;
