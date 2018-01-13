@@ -883,11 +883,12 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           u32CharacterCodePoint != orxCHAR_NULL;
           u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
       {
+        /* Calculate what the byte index of the current codepoint is. Since pc has since advanced past the current codepoint, we must subtract the length of the current codepoint from the pointer difference. */
+        orxU32 u32CurrentOffset = (pc - _pstText->zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
         /* Are there any markers at all? Have we traversed all of them? */
         if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0) && (u32MarkerIndex < _pstText->u32MarkerCounter))
         {
           orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
-          orxU32 u32CurrentOffset = (pc - _pstText->zString);
           /* There may be more than one marker at this offset. */
           while (stMarker.u32Offset == u32CurrentOffset)
           {
@@ -966,7 +967,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* Add a new line marker, replacing the reference to the previous one */
             orxTEXT_MARKER_DATA stData;
             stData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
-            orxU32 u32CurrentOffset = (pc - _pstText->zString);
             stData.fLineHeight = orxFLOAT_0;
             pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset, stData);
 
