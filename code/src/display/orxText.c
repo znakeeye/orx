@@ -876,6 +876,8 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       const orxCHAR  *pc;
       orxFLOAT        fMaxWidth;
 
+      orxTEXT_MARKER *apstAppliedMarkers[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
+
       /* For all characters */
       for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fCharacterHeight, fWidth = fMaxWidth = orxFLOAT_0, u32MarkerIndex = 0;
           u32CharacterCodePoint != orxCHAR_NULL;
@@ -889,12 +891,50 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           /* There may be more than one marker at this offset. */
           while (stMarker.u32Offset == u32CurrentOffset)
           {
+            /* Update the currently applied marker of this type */
+            orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+            orxASSERT(orxText_MarkerTypeIsStyle(eResolvedStyle));
+            apstAppliedMarkers[eResolvedStyle] = &_pstText->pstMarkerArray[u32MarkerIndex];
+            /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
             pstNewMarker->u32Offset = stMarker.u32Offset;
             u32MarkerIndex++;
+            /* Move on to the next possible marker */
             stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           }
         }
+
+        /* Calculate the size of this glyph */
+        orxVECTOR               vSize             = orxVECTOR_0;
+        orxVECTOR               vCurrentScale     = orxVECTOR_1;
+        const orxCHARACTER_MAP *pstCurrentFontMap = orxFont_GetMap(_pstText->pstFont);
+        if ((apstAppliedMarkers[orxTEXT_MARKER_TYPE_SCALE] != orxNULL) && (apstAppliedMarkers[orxTEXT_MARKER_TYPE_SCALE]->stData.eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT))
+        {
+          orxASSERT(apstAppliedMarkers[orxTEXT_MARKER_TYPE_SCALE]->stData.eType == orxTEXT_MARKER_TYPE_SCALE);
+          vCurrentScale = apstAppliedMarkers[orxTEXT_MARKER_TYPE_SCALE]->stData.vScale;
+        }
+        if ((apstAppliedMarkers[orxTEXT_MARKER_TYPE_FONT] != orxNULL) && (apstAppliedMarkers[orxTEXT_MARKER_TYPE_FONT]->stData.eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT))
+        {
+          orxASSERT(apstAppliedMarkers[orxTEXT_MARKER_TYPE_FONT]->stData.eType == orxTEXT_MARKER_TYPE_FONT);
+          pstCurrentFontMap = apstAppliedMarkers[orxTEXT_MARKER_TYPE_FONT]->stData.stFontData.pstMap;
+        }
+        if (pstCurrentFontMap != orxNULL)
+        {
+          orxCHARACTER_GLYPH     *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentFontMap->pstCharacterTable, u32CharacterCodePoint);
+          if (pstGlyph != orxNULL)
+          {
+            orxVector_Set(&vSize, pstGlyph->fWidth * vCurrentScale.fX, pstCurrentFontMap->fCharacterHeight * vCurrentScale.fY, 0);
+            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Computing size of glyph[%c]", u32CharacterCodePoint);
+            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "W[%f] = %f * %f; H[%f] = %f * %f",
+                           vSize.fX, pstGlyph->fWidth, vCurrentScale.fX,
+                           vSize.fY, pstCurrentFontMap->fCharacterHeight, vCurrentScale.fY);
+          }
+        }
+
+        /* Update current line height if necessary */
+        pstLineMarker->stData.fLineHeight = orxMAX(pstLineMarker->stData.fLineHeight, vSize.fY);
+        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Updated line height to %f", pstLineMarker->stData.fLineHeight);
+
         /* TODO should we verify somehow that a marker cannot appear between a \r and \n? */
         /* TODO be sure to have line markers added on consistent sides of newline characters */
         /* Depending on character */
@@ -936,7 +976,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           default:
           {
             /* Updates width */
-            fWidth += orxFont_GetCharacterWidth(_pstText->pstFont, u32CharacterCodePoint);
+            fWidth += vSize.fX;
 
             break;
           }
