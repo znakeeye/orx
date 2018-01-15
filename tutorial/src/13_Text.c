@@ -47,7 +47,44 @@
  * then relaunch this tutorial. For an exhaustive list of options, please look at CreationTemplate.ini.
  */
 
-orxTEXT *pstTestText = orxNULL;
+void ReloadTexts();
+void ResetScene();
+void CycleText();
+
+static orxOBJECT *pstScene = orxNULL;
+
+void ResetScene()
+{
+  if (pstScene == orxNULL)
+  {
+    return;
+  }
+  orxObject_SetLifeTime(pstScene, orxFLOAT_0);
+  pstScene = orxObject_CreateFromConfig("Scene");
+  ReloadTexts();
+}
+
+/* TODO Find a better way of writing this */
+void CycleText(orxBOOL _bNext)
+{
+  orxLOG("Cycling to %s text object", (_bNext ? "next" : "previous"));
+  static orxS32 s32Index = -1; /* We start at negative one so it increments to 0 on startup */
+  static orxOBJECT *pstObject = orxNULL;
+  orxConfig_PushSection("Scene");
+  orxU32 u32Size = orxConfig_GetListCounter("TextList");
+  s32Index = s32Index + (_bNext ? 1 : -1);
+  if (s32Index < 0)
+  {
+    s32Index = u32Size + s32Index;
+  }
+  s32Index = s32Index % u32Size;
+  orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
+  orxConfig_SetString("ChildList", zObjectName);
+  orxConfig_PopSection();
+
+  ResetScene();
+
+}
 
 void DebugText(const orxTEXT *_pstText)
 {
@@ -102,15 +139,11 @@ void ReloadTexts()
   }
 }
 
-static orxOBJECT *pstScene = orxNULL;
-
 orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
   orxSTATUS eResult = orxSTATUS_SUCCESS;
   if (_pstEvent->eID == orxRESOURCE_EVENT_UPDATE)
   {
-    orxObject_SetLifeTime(pstScene, orxFLOAT_0);
-    pstScene = orxObject_CreateFromConfig("Scene");
-    ReloadTexts();
+    ResetScene();
   }
   return eResult;
 }
@@ -129,6 +162,8 @@ orxSTATUS orxFASTCALL Init()
   /* Creates viewport */
   orxViewport_CreateFromConfig("Viewport");
 
+  CycleText(orxTRUE);
+
   /* Creates object */
   pstScene = orxObject_CreateFromConfig("Scene");
 
@@ -138,18 +173,26 @@ orxSTATUS orxFASTCALL Init()
 	orxSTRUCTURE *pstStructure = orxGraphic_GetData( pstGraphic );
   pstTestText = orxTEXT(pstStructure);
 #endif
-
-  ReloadTexts();
-
   /* Done! */
   return orxSTATUS_SUCCESS;
 }
-
 /** Run function
  */
 orxSTATUS orxFASTCALL Run()
 {
   orxSTATUS eResult = orxSTATUS_SUCCESS;
+
+  /* Cycle next? */
+  if (orxInput_IsActive("Next") && orxInput_HasNewStatus("Next"))
+  {
+    CycleText(orxTRUE);
+  }
+
+  /* Cycle previous? */
+  if (orxInput_IsActive("Prev") && orxInput_HasNewStatus("Prev"))
+  {
+    CycleText(orxFALSE);
+  }
 
   /* Screenshot? */
   if (orxInput_IsActive("Screenshot") && orxInput_HasNewStatus("Screenshot"))
@@ -163,7 +206,6 @@ orxSTATUS orxFASTCALL Run()
   {
     /* Updates result */
     eResult = orxSTATUS_FAILURE;
-    orxLOG("TEST");
   }
 
   /* Done! */
