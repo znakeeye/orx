@@ -661,10 +661,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
   return pstResult;
 }
 
-#define orxText_MarkerTypeIsStyle(eType)       (((eType) >= 0) && ((eType) < orxTEXT_MARKER_TYPE_NUMBER_STYLES))
-#define orxText_MarkerTypeIsManipulator(eType) (((eType) > orxTEXT_MARKER_TYPE_NUMBER_STYLES) && ((eType) < orxTEXT_MARKER_TYPE_NUMBER_PARSED))
-#define orxText_MarkerTypeIsParsed(eType)      (orxText_MarkerTypeIsStyle((eType)) || orxText_MarkerTypeIsManipulator((eType)))
-
 /** Takes style markers out of the text string and places them into an array.
  * @param[in]   _pstText      Concerned text
  * @return      A cleaned version of the current string for _pstText
@@ -703,8 +699,8 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
     /* Hit a marker? */
     if (pstNewMarker != orxNULL)
     {
-      orxASSERT(orxText_MarkerTypeIsParsed(pstNewMarker->stData.eType));
-      if (orxText_MarkerTypeIsStyle(pstNewMarker->stData.eType))
+      orxASSERT(orxDisplay_MarkerTypeIsParsed(pstNewMarker->stData.eType));
+      if (orxDisplay_MarkerTypeIsStyle(pstNewMarker->stData.eType))
       {
         /* Push marker onto the relevant stack */
         orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(pstMarkerNodeBank);
@@ -719,7 +715,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 
         orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
       }
-      else if (orxText_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
+      else if (orxDisplay_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
       {
         /* Manipulate relevant marker stack based on the manipulator */
 
@@ -752,7 +748,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
             pstNewMarker = orxNULL;
             continue;
           }
-          orxASSERT(orxText_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
+          orxASSERT(orxDisplay_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
           /* Get the marker that we'll popping. */
           orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
           orxASSERT((pstPoppedNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", ePopThisType);
@@ -894,7 +890,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           {
             /* Update the currently applied marker of this type */
             orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
-            orxASSERT(orxText_MarkerTypeIsStyle(eResolvedStyle));
+            orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
             apstAppliedMarkers[eResolvedStyle] = &_pstText->pstMarkerArray[u32MarkerIndex];
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
