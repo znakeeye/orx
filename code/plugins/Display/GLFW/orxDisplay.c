@@ -1922,8 +1922,17 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
   orxDISPLAY_MATRIX mTransform;
   const orxCHAR    *pc;
   orxU32            u32CharacterCodePoint;
-  GLfloat           fX, fY, fHeight;
+  orxU32            u32MarkerIndex;
+  GLfloat           fX, fY;
+  orxFLOAT          fLineHeight;
   orxSTATUS         eResult = orxSTATUS_SUCCESS;
+  orxENUM           eType;
+  orxTEXT_MARKER_DATA astAppliedStyles[orxTEXT_MARKER_TYPE_NUMBER_STYLES];
+  for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
+  {
+    astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+    astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
+  }
 
   /* Checks */
   orxASSERT((sstDisplay.u32Flags & orxDISPLAY_KU32_STATIC_FLAG_READY) == orxDISPLAY_KU32_STATIC_FLAG_READY);
@@ -1935,17 +1944,86 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
   /* Inits matrix */
   orxDisplay_GLFW_InitMatrix(&mTransform, _pstTransform->fDstX, _pstTransform->fDstY, _pstTransform->fScaleX, _pstTransform->fScaleY, _pstTransform->fRotation, _pstTransform->fSrcX, _pstTransform->fSrcY);
 
-  /* Gets character's height */
-  fHeight = _pstMap->fCharacterHeight;
-
   /* Prepares font for drawing */
   orxDisplay_GLFW_PrepareBitmap(_pstFont, _eSmoothing, _eBlendMode);
 
   /* For all characters */
-  for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_zString, &pc), fX = 0.0f, fY = 0.0f;
+  for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_zString, &pc), fX = 0.0f, fY = 0.0f, fLineHeight = orxFLOAT_0, u32MarkerIndex = 0;
       u32CharacterCodePoint != orxCHAR_NULL;
       u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
   {
+    /* Calculate what the byte index of the current codepoint is. Since pc has since advanced past the current codepoint, we must subtract the length of the current codepoint from the pointer difference. */
+    orxU32 u32CurrentOffset = (pc - _zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
+    /* Are there any markers at all? Have we traversed all of them? */
+    if ((_pstMarkerArray != orxNULL) && (_u32MarkerCounter > 0) && (u32MarkerIndex < _u32MarkerCounter))
+    {
+      orxTEXT_MARKER stMarker = _pstMarkerArray[u32MarkerIndex];
+      /* There may be more than one marker at this offset. */
+      while (stMarker.u32Offset == u32CurrentOffset)
+      {
+        /* Line height markers are special as they update the max height of the line. */
+        if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_LINE_HEIGHT)
+        {
+          /* TODO: THIS WORKS BUT WHY? I thought line height was getting updated before the previously set line height got applied to fY, causing the wrong line height to get added. I thought this was because the line height markers were on the newline character instead of the following character. Turned out they were actually on the CR. I thought that the fix was to have the marker added at the index of the first char of the next line, and to accomplish that I added 1 to the offset when adding the line height marker in UpdateSize. I fixed the line height "problem" by doing the equivalent to incrementing offset when skipping orxCHAR_CR, so I wasn't actually getting the marker to appear *after* the newline. However, having it appear at the newline char fixed the problem, which means line height is *not* getting overwritten too early. Looking at the code in the renderer, this does not seem to be the case and now I am VERY CONFUSED. */
+          orxASSERT(u32CurrentOffset == 0 || *(_zString + u32CurrentOffset - 1) == orxCHAR_LF);
+          fLineHeight = stMarker.stData.fLineHeight;
+        }
+        else
+        {
+          /* Resolve "default style" placeholder markers. */
+          orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+          orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved marker type was [%u] (not a style)", eResolvedStyle);
+          /* Update the currently applied marker of this type */
+          astAppliedStyles[eResolvedStyle] = _pstMarkerArray[u32MarkerIndex].stData;
+          if (eResolvedStyle == orxTEXT_MARKER_TYPE_FONT)
+          {
+            if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+            {
+              orxDisplay_GLFW_PrepareBitmap(_pstFont, _eSmoothing, _eBlendMode);
+            }
+            else
+            {
+              orxDisplay_GLFW_PrepareBitmap(stMarker.stData.stFontData.pstFont, _eSmoothing, _eBlendMode);
+            }
+          }
+        }
+        /* Move on to the next possible marker */
+        u32MarkerIndex++;
+        stMarker = _pstMarkerArray[u32MarkerIndex];
+      }
+    }
+
+    /* Calculate the size of this glyph */
+    orxVECTOR               vSize          = orxVECTOR_0;
+    orxVECTOR               vCurrentScale  = orxVECTOR_1;
+    const orxCHARACTER_MAP *pstCurrentMap  = _pstMap;
+    const orxBITMAP        *pstCurrentFont = _pstFont;
+    /* Grab the values for the latest scale and font markers for size calculation */
+    if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+    {
+      orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType == orxTEXT_MARKER_TYPE_SCALE);
+      vCurrentScale = astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].vScale;
+    }
+    if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+    {
+      orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
+      pstCurrentMap  = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
+      pstCurrentFont = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstFont;
+    }
+    /* Gets glyph from UTF-8 table */
+    orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentMap->pstCharacterTable, u32CharacterCodePoint);
+    /* Compute size */
+    if (pstGlyph != orxNULL)
+    {
+      vSize.fX = pstGlyph->fWidth                * vCurrentScale.fX;
+      vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
+    }
+    else
+    {
+      vSize.fX = pstCurrentMap->fCharacterHeight * vCurrentScale.fX;
+      vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
+    }
+
     /* Depending on character */
     switch(u32CharacterCodePoint)
     {
@@ -1964,7 +2042,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
       case orxCHAR_LF:
       {
         /* Updates Y position */
-        fY += fHeight;
+        fY += fLineHeight;
 
         /* Resets X position */
         fX = 0.0f;
@@ -1974,18 +2052,9 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
 
       default:
       {
-        const orxCHARACTER_GLYPH *pstGlyph;
-        orxFLOAT                  fWidth;
-
-        /* Gets glyph from UTF-8 table */
-        pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(_pstMap->pstCharacterTable, u32CharacterCodePoint);
-
         /* Valid? */
         if(pstGlyph != orxNULL)
         {
-          /* Gets character width */
-          fWidth = pstGlyph->fWidth;
-
           /* End of buffer? */
           if(sstDisplay.s32BufferIndex > orxDISPLAY_KU32_VERTEX_BUFFER_SIZE - 5)
           {
@@ -1993,42 +2062,40 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
             orxDisplay_GLFW_DrawArrays();
           }
 
+          /* Where the top of the glyph is */
+          orxFLOAT fGlyphY = fY + (fLineHeight - vSize.fY);
+
           /* Outputs vertices and texture coordinates */
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex].fX      = (mTransform.vX.fX * fX) + (mTransform.vX.fY * (fY + fHeight)) + mTransform.vX.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex].fY      = (mTransform.vY.fX * fX) + (mTransform.vY.fY * (fY + fHeight)) + mTransform.vY.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fX  = (mTransform.vX.fX * fX) + (mTransform.vX.fY * fY) + mTransform.vX.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fY  = (mTransform.vY.fX * fX) + (mTransform.vY.fY * fY) + mTransform.vY.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fX  = (mTransform.vX.fX * (fX + fWidth)) + (mTransform.vX.fY * (fY + fHeight)) + mTransform.vX.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fY  = (mTransform.vY.fX * (fX + fWidth)) + (mTransform.vY.fY * (fY + fHeight)) + mTransform.vY.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fX  = (mTransform.vX.fX * (fX + fWidth)) + (mTransform.vX.fY * fY) + mTransform.vX.fZ;
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fY  = (mTransform.vY.fX * (fX + fWidth)) + (mTransform.vY.fY * fY) + mTransform.vY.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex].fX      = (mTransform.vX.fX * fX) + (mTransform.vX.fY * (fGlyphY + vSize.fY)) + mTransform.vX.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex].fY      = (mTransform.vY.fX * fX) + (mTransform.vY.fY * (fGlyphY + vSize.fY)) + mTransform.vY.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fX  = (mTransform.vX.fX * fX) + (mTransform.vX.fY * fGlyphY) + mTransform.vX.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fY  = (mTransform.vY.fX * fX) + (mTransform.vY.fY * fGlyphY) + mTransform.vY.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fX  = (mTransform.vX.fX * (fX + vSize.fX)) + (mTransform.vX.fY * (fGlyphY + vSize.fY)) + mTransform.vX.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fY  = (mTransform.vY.fX * (fX + vSize.fX)) + (mTransform.vY.fY * (fGlyphY + vSize.fY)) + mTransform.vY.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fX  = (mTransform.vX.fX * (fX + vSize.fX)) + (mTransform.vX.fY * fGlyphY) + mTransform.vX.fZ;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fY  = (mTransform.vY.fX * (fX + vSize.fX)) + (mTransform.vY.fY * fGlyphY) + mTransform.vY.fZ;
 
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex].fU      =
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fU  = (GLfloat)(_pstFont->fRecRealWidth * (pstGlyph->fX + orxDISPLAY_KF_BORDER_FIX));
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fU  = (GLfloat)(pstCurrentFont->fRecRealWidth * (pstGlyph->fX + orxDISPLAY_KF_BORDER_FIX));
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fU  =
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fU  = (GLfloat)(_pstFont->fRecRealWidth * (pstGlyph->fX + fWidth - orxDISPLAY_KF_BORDER_FIX));
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fU  = (GLfloat)(pstCurrentFont->fRecRealWidth * (pstGlyph->fX + pstGlyph->fWidth - orxDISPLAY_KF_BORDER_FIX));
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].fV  =
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fV  = (GLfloat)(_pstFont->fRecRealHeight * (pstGlyph->fY + orxDISPLAY_KF_BORDER_FIX));
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].fV  = (GLfloat)(pstCurrentFont->fRecRealHeight * (pstGlyph->fY + orxDISPLAY_KF_BORDER_FIX));
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex].fV      =
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fV  = (GLfloat)(_pstFont->fRecRealHeight * (pstGlyph->fY + fHeight - orxDISPLAY_KF_BORDER_FIX));
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].fV  = (GLfloat)(pstCurrentFont->fRecRealHeight * (pstGlyph->fY + pstCurrentMap->fCharacterHeight - orxDISPLAY_KF_BORDER_FIX));
 
           /* Fills the color list */
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex].stRGBA      =
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].stRGBA  =
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].stRGBA  =
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].stRGBA  = _pstFont->stColor;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].stRGBA  = pstCurrentFont->stColor;
 
           /* Updates counter */
           sstDisplay.s32BufferIndex += 4;
         }
-        else
-        {
-          /* Gets default width */
-          fWidth = fHeight;
-        }
 
         /* Updates X position */
-        fX += fWidth;
+        fX += vSize.fX;
 
         break;
       }
