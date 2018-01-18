@@ -944,6 +944,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             {
               /* Updates pointer and index */
               pc++;
+              u32CurrentOffset++;
             }
 
             /* Fall through */
@@ -965,8 +966,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             orxMemory_Zero(&stData, sizeof(stData));
             stData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
             stData.fLineHeight = orxFLOAT_0;
-            /* NOTE: The u32CurrentOffset here has not changed from what it was regardless of whether a CR was skipped (which increments pc above). */
-            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset, stData);
+            orxASSERT(*(_pstText->zString + u32CurrentOffset) == orxCHAR_LF);
+            /* We add one here because we want the marker to start on the first character of the next line.
+               Line height is only meaningful to the glyphs of that line, and allowing it to show up sooner will throw off the renderer. */
+            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, stData);
 
             break;
           }
