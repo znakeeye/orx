@@ -915,17 +915,17 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           orxASSERT(apstAppliedMarkers[orxTEXT_MARKER_TYPE_FONT]->stData.eType == orxTEXT_MARKER_TYPE_FONT);
           pstCurrentFontMap = apstAppliedMarkers[orxTEXT_MARKER_TYPE_FONT]->stData.stFontData.pstMap;
         }
-        if (pstCurrentFontMap != orxNULL)
+        orxASSERT(pstCurrentFontMap != orxNULL);
+        orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentFontMap->pstCharacterTable, u32CharacterCodePoint);
+        if (pstGlyph != orxNULL)
         {
-          orxCHARACTER_GLYPH     *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentFontMap->pstCharacterTable, u32CharacterCodePoint);
-          if (pstGlyph != orxNULL)
-          {
-            orxVector_Set(&vSize, pstGlyph->fWidth * vCurrentScale.fX, pstCurrentFontMap->fCharacterHeight * vCurrentScale.fY, 0);
-            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Computing size of glyph[%c]", u32CharacterCodePoint);
-            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "W[%f] = %f * %f; H[%f] = %f * %f",
-                           vSize.fX, pstGlyph->fWidth, vCurrentScale.fX,
-                           vSize.fY, pstCurrentFontMap->fCharacterHeight, vCurrentScale.fY);
-          }
+          vSize.fX = pstGlyph->fWidth * vCurrentScale.fX;
+          vSize.fY = pstCurrentFontMap->fCharacterHeight * vCurrentScale.fY;
+        }
+        else
+        {
+          vSize.fX = pstCurrentFontMap->fCharacterHeight * vCurrentScale.fX;
+          vSize.fY = pstCurrentFontMap->fCharacterHeight * vCurrentScale.fY;
         }
 
         /* Update current line height if necessary */
