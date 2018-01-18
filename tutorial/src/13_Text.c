@@ -47,43 +47,51 @@
  * then relaunch this tutorial. For an exhaustive list of options, please look at CreationTemplate.ini.
  */
 
-void ReloadTexts();
+void DebugTexts();
 void ResetScene();
 void CycleText();
 
 static orxOBJECT *pstScene = orxNULL;
+static orxOBJECT *pstCurrentText = orxNULL;
 
 void ResetScene()
 {
-  if (pstScene == orxNULL)
+  if (pstScene != orxNULL)
   {
-    return;
+    orxObject_SetLifeTime(pstScene, orxFLOAT_0);
   }
-  orxObject_SetLifeTime(pstScene, orxFLOAT_0);
   pstScene = orxObject_CreateFromConfig("Scene");
-  ReloadTexts();
+  DebugTexts();
 }
 
 /* TODO Find a better way of writing this */
 void CycleText(orxBOOL _bNext)
 {
   orxLOG("Cycling to %s text object", (_bNext ? "next" : "previous"));
-  static orxS32 s32Index = -1; /* We start at negative one so it increments to 0 on startup */
   static orxOBJECT *pstObject = orxNULL;
+  static orxS32     s32Index = -1; /* We start at negative one so it increments to 0 on startup */
+  s32Index += (_bNext ? 1 : -1);
   orxConfig_PushSection("Scene");
   orxU32 u32Size = orxConfig_GetListCounter("TextList");
-  s32Index = s32Index + (_bNext ? 1 : -1);
-  if (s32Index < 0)
+  if(s32Index < 0)
   {
-    s32Index = u32Size + s32Index;
+    orxASSERT(s32Index == -1);
+    s32Index = u32Size - 1;
   }
-  s32Index = s32Index % u32Size;
+  else if((orxU32)s32Index >= u32Size)
+  {
+    s32Index = 0;
+  }
+  orxLOG("Index is now %d", s32Index);
   orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
-  orxConfig_SetString("ChildList", zObjectName);
+  orxLOG("Text object will be %s", zObjectName);
+  if (pstCurrentText != orxNULL)
+  {
+    orxObject_SetLifeTime(pstCurrentText, orxFLOAT_0);
+  }
+  pstCurrentText = orxObject_CreateFromConfig(zObjectName);
   orxConfig_PopSection();
-
-  ResetScene();
-
+  DebugTexts();
 }
 
 void DebugText(const orxTEXT *_pstText)
@@ -118,19 +126,17 @@ void DebugText(const orxTEXT *_pstText)
   }
 }
 
-void ReloadTexts()
+void DebugTexts()
 {
   /* Gets first text */
+  /* NOTE I was getting some problems that indicate some text object configs hanging around in memory after a config reload event even after they'd been removed.
+     This included the event not even being fired, and a segfault in one instances where I re-included a ini file full of text objects.
+     Could not consistently replicate the problems, so it may be that I introduced a buffer overflow somewhere, though that seems quite unlikely... */
   orxTEXT *pstText = orxTEXT(orxStructure_GetFirst(orxSTRUCTURE_ID_TEXT));
 
   /* Not out of text? */
   while(pstText != orxNULL)
   {
-    /* Update string */
-    orxConfig_PushSection(orxText_GetName(pstText));
-    orxText_SetString(pstText, orxConfig_GetString("String"));
-    orxConfig_PopSection();
-
     /* Output debug data */
     DebugText(pstText);
 
@@ -166,13 +172,8 @@ orxSTATUS orxFASTCALL Init()
 
   /* Creates object */
   pstScene = orxObject_CreateFromConfig("Scene");
+  DebugTexts();
 
-#if 0
-  orxOBJECT *pstMyTextObject = orxObject_CreateFromConfig("TextObject");
-  orxGRAPHIC *pstGraphic = orxGRAPHIC(orxOBJECT_GET_STRUCTURE( pstMyTextObject, GRAPHIC) ) ;
-	orxSTRUCTURE *pstStructure = orxGraphic_GetData( pstGraphic );
-  pstTestText = orxTEXT(pstStructure);
-#endif
   /* Done! */
   return orxSTATUS_SUCCESS;
 }
@@ -185,12 +186,14 @@ orxSTATUS orxFASTCALL Run()
   /* Cycle next? */
   if (orxInput_IsActive("Next") && orxInput_HasNewStatus("Next"))
   {
+    orxLOG("NEXT");
     CycleText(orxTRUE);
   }
 
   /* Cycle previous? */
   if (orxInput_IsActive("Prev") && orxInput_HasNewStatus("Prev"))
   {
+    orxLOG("PREVIOUS");
     CycleText(orxFALSE);
   }
 
