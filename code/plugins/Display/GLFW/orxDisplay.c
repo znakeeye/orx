@@ -2012,6 +2012,9 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
       pstCurrentMap  = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
       pstCurrentFont = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstFont;
     }
+    orxASSERT(pstCurrentFont != orxNULL);
+    orxASSERT(pstCurrentMap != orxNULL);
+    orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
     /* Gets glyph from UTF-8 table */
     orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentMap->pstCharacterTable, u32CharacterCodePoint);
     /* Compute size */
