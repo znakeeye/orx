@@ -1991,6 +1991,10 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
         }
         /* Move on to the next possible marker */
         u32MarkerIndex++;
+        if (u32MarkerIndex >= _u32MarkerCounter)
+        {
+          break;
+        }
         stMarker = _pstMarkerArray[u32MarkerIndex];
       }
     }

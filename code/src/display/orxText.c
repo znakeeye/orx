@@ -902,6 +902,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
             pstNewMarker->u32Offset = stMarker.u32Offset;
             u32MarkerIndex++;
+            if(u32MarkerIndex >= _pstText->u32MarkerCounter)
+            {
+              break;
+            }
             /* Move on to the next possible marker */
             stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           }
