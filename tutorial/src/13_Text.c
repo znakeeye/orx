@@ -62,6 +62,14 @@ void ResetScene()
   pstScene = orxObject_CreateFromConfig("Scene");
   DebugTexts();
 }
+void ResetText()
+{
+  if (pstCurrentText != orxNULL)
+  {
+    orxObject_SetLifeTime(pstCurrentText, orxFLOAT_0);
+    pstCurrentText = orxObject_CreateFromConfig(orxObject_GetName(pstCurrentText));
+  }
+}
 
 /* TODO Find a better way of writing this */
 void CycleText(orxBOOL _bNext)
@@ -144,7 +152,7 @@ orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
   orxSTATUS eResult = orxSTATUS_SUCCESS;
   if (_pstEvent->eID == orxRESOURCE_EVENT_UPDATE)
   {
-    ResetScene();
+    ResetText();
   }
   return eResult;
 }
