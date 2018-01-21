@@ -1983,6 +1983,8 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
             }
             else
             {
+              orxASSERT(stMarker.stData.stFontData.pstFont != orxNULL);
+              orxASSERT(stMarker.stData.stFontData.pstMap != orxNULL);
               orxDisplay_GLFW_PrepareBitmap(stMarker.stData.stFontData.pstFont, _eSmoothing, _eBlendMode);
             }
           }
