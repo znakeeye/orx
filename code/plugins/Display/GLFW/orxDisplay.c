@@ -1964,8 +1964,9 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
         /* Line height markers are special as they update the max height of the line. */
         if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_LINE_HEIGHT)
         {
-          /* TODO: THIS WORKS BUT WHY? I thought line height was getting updated before the previously set line height got applied to fY, causing the wrong line height to get added. I thought this was because the line height markers were on the newline character instead of the following character. Turned out they were actually on the CR. I thought that the fix was to have the marker added at the index of the first char of the next line, and to accomplish that I added 1 to the offset when adding the line height marker in UpdateSize. I fixed the line height "problem" by doing the equivalent to incrementing offset when skipping orxCHAR_CR, so I wasn't actually getting the marker to appear *after* the newline. However, having it appear at the newline char fixed the problem, which means line height is *not* getting overwritten too early. Looking at the code in the renderer, this does not seem to be the case and now I am VERY CONFUSED. */
+          /* Assert that the previous character is a newline */
           orxASSERT(u32CurrentOffset == 0 || *(_zString + (u32CurrentOffset - 1)) == orxCHAR_LF);
+          /* Set the height of this line */
           fLineHeight = stMarker.stData.fLineHeight;
         }
         else
