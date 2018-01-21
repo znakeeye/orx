@@ -949,8 +949,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         pstLineMarker->stData.fLineHeight = orxMAX(pstLineMarker->stData.fLineHeight, vSize.fY);
         orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Updated line height to %f", pstLineMarker->stData.fLineHeight);
 
-        /* TODO should we verify somehow that a marker cannot appear between a \r and \n? */
-        /* TODO be sure to have line markers added on consistent sides of newline characters */
         /* Depending on character */
         switch(u32CharacterCodePoint)
         {
