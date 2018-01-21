@@ -49,7 +49,6 @@
 
 void DebugTexts();
 void ResetScene();
-void CycleText();
 
 static orxOBJECT *pstScene = orxNULL;
 static orxOBJECT *pstCurrentText = orxNULL;
@@ -75,13 +74,9 @@ void CycleText(orxBOOL _bNext)
   orxU32 u32Size = orxConfig_GetListCounter("TextList");
   if(s32Index < 0)
   {
-    orxASSERT(s32Index == -1);
     s32Index = u32Size - 1;
   }
-  else if((orxU32)s32Index >= u32Size)
-  {
-    s32Index = 0;
-  }
+  s32Index = s32Index % u32Size;
   orxLOG("Index is now %d", s32Index);
   orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
   orxLOG("Text object will be %s", zObjectName);
