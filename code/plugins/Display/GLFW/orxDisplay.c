@@ -2005,6 +2005,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
     orxVECTOR               vCurrentScale  = orxVECTOR_1;
     const orxCHARACTER_MAP *pstCurrentMap  = _pstMap;
     const orxBITMAP        *pstCurrentFont = _pstFont;
+    orxRGBA                 stCurrentColor = {255, 255, 255, 255};
     /* Grab the values for the latest scale and font markers for size calculation */
     if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
     {
@@ -2017,6 +2018,17 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
       pstCurrentMap  = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
       pstCurrentFont = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstFont;
     }
+    if (astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+    {
+      orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].eType == orxTEXT_MARKER_TYPE_COLOR);
+      stCurrentColor = astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].stRGBA;
+    }
+    /* Multiply with bitmap color */
+    orxRGBA stBitmapColor = pstCurrentFont->stColor;
+    stBitmapColor.u8R = (stBitmapColor.u8R * stCurrentColor.u8R) / 255;
+    stBitmapColor.u8G = (stBitmapColor.u8G * stCurrentColor.u8G) / 255;
+    stBitmapColor.u8B = (stBitmapColor.u8B * stCurrentColor.u8B) / 255;
+    stBitmapColor.u8A = (stBitmapColor.u8A * stCurrentColor.u8A) / 255;
     orxASSERT(pstCurrentFont != orxNULL);
     orxASSERT(pstCurrentMap != orxNULL);
     orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
@@ -2098,7 +2110,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex].stRGBA      =
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 1].stRGBA  =
           sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 2].stRGBA  =
-          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].stRGBA  = pstCurrentFont->stColor;
+          sstDisplay.astVertexList[sstDisplay.s32BufferIndex + 3].stRGBA  = stBitmapColor;
 
           /* Updates counter */
           sstDisplay.s32BufferIndex += 4;
