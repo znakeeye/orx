@@ -911,7 +911,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         orxVECTOR               vSize          = orxVECTOR_0;
         orxVECTOR               vCurrentScale  = orxVECTOR_1;
         const orxCHARACTER_MAP *pstCurrentMap  = orxFont_GetMap(_pstText->pstFont);
-        orxLOG("1 %p", pstCurrentMap);
         /* Grab the values for the latest scale and font markers for size calculation */
         if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
         {
@@ -922,9 +921,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         {
           orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
           pstCurrentMap = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
-          orxLOG("2 %p", pstCurrentMap);
         }
-        orxLOG("3 %p", pstCurrentMap);
         orxASSERT(pstCurrentMap != orxNULL);
         orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
         /* Gets glyph from UTF-8 table */
@@ -943,7 +940,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
 
         /* Update current line height if necessary */
         pstLineMarker->stData.fLineHeight = orxMAX(pstLineMarker->stData.fLineHeight, vSize.fY);
-        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Updated line height to %f", pstLineMarker->stData.fLineHeight);
 
         /* Depending on character */
         switch(u32CharacterCodePoint)
