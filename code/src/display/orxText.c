@@ -896,11 +896,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
               (u32MarkerIndex < _pstText->u32MarkerCounter) && (stMarker.u32Offset == u32CurrentOffset);
               stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
           {
-            stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
             /* Update the currently applied marker of this type */
             orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
-            astAppliedStyles[eResolvedStyle] = _pstText->pstMarkerArray[u32MarkerIndex].stData;
+            astAppliedStyles[eResolvedStyle] = stMarker.stData;
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
             pstNewMarker->u32Offset = stMarker.u32Offset;

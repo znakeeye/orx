@@ -1963,7 +1963,6 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
           (u32MarkerIndex < _u32MarkerCounter) && (stMarker.u32Offset == u32CurrentOffset);
           stMarker = _pstMarkerArray[++u32MarkerIndex])
       {
-        stMarker = _pstMarkerArray[u32MarkerIndex];
         /* Line height markers are special as they update the max height of the line. */
         if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_LINE_HEIGHT)
         {
@@ -1978,7 +1977,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
           orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
           orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved marker type was [%u] (not a style)", eResolvedStyle);
           /* Update the currently applied marker of this type */
-          astAppliedStyles[eResolvedStyle] = _pstMarkerArray[u32MarkerIndex].stData;
+          astAppliedStyles[eResolvedStyle] = stMarker.stData;
           if (eResolvedStyle == orxTEXT_MARKER_TYPE_FONT)
           {
             if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
