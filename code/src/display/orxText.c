@@ -890,10 +890,13 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         /* Are there any markers at all? Have we traversed all of them? */
         if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0) && (u32MarkerIndex < _pstText->u32MarkerCounter))
         {
-          orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+          orxTEXT_MARKER stMarker;
           /* There may be more than one marker at this offset. */
-          while (stMarker.u32Offset == u32CurrentOffset)
+          for(stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+              (u32MarkerIndex < _pstText->u32MarkerCounter) && (stMarker.u32Offset == u32CurrentOffset);
+              stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
           {
+            stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
             /* Update the currently applied marker of this type */
             orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
@@ -901,13 +904,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
             pstNewMarker->u32Offset = stMarker.u32Offset;
-            u32MarkerIndex++;
-            if(u32MarkerIndex >= _pstText->u32MarkerCounter)
-            {
-              break;
-            }
-            /* Move on to the next possible marker */
-            stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
           }
         }
 

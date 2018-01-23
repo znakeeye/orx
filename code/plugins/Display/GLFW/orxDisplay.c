@@ -1957,15 +1957,18 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
     /* Are there any markers at all? Have we traversed all of them? */
     if ((_pstMarkerArray != orxNULL) && (_u32MarkerCounter > 0) && (u32MarkerIndex < _u32MarkerCounter))
     {
-      orxTEXT_MARKER stMarker = _pstMarkerArray[u32MarkerIndex];
+      orxTEXT_MARKER stMarker;
       /* There may be more than one marker at this offset. */
-      while (stMarker.u32Offset == u32CurrentOffset)
+      for(stMarker = _pstMarkerArray[u32MarkerIndex];
+          (u32MarkerIndex < _u32MarkerCounter) && (stMarker.u32Offset == u32CurrentOffset);
+          stMarker = _pstMarkerArray[++u32MarkerIndex])
       {
+        stMarker = _pstMarkerArray[u32MarkerIndex];
         /* Line height markers are special as they update the max height of the line. */
         if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_LINE_HEIGHT)
         {
           /* Assert that the previous character is a newline */
-          orxASSERT(u32CurrentOffset == 0 || *(_zString + (u32CurrentOffset - 1)) == orxCHAR_LF);
+          orxASSERT((u32CurrentOffset == 0 || *(_zString + (u32CurrentOffset - 1)) == orxCHAR_LF) && "Character was %c", *(_zString + (u32CurrentOffset - 1)));
           /* Set the height of this line */
           fLineHeight = stMarker.stData.fLineHeight;
         }
@@ -1990,13 +1993,6 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
             }
           }
         }
-        /* Move on to the next possible marker */
-        u32MarkerIndex++;
-        if (u32MarkerIndex >= _u32MarkerCounter)
-        {
-          break;
-        }
-        stMarker = _pstMarkerArray[u32MarkerIndex];
       }
     }
 
