@@ -817,6 +817,78 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   _pstText->zString = zOutputString;
 }
 
+static orxVECTOR orxFASTCALL orxText_GetCharacterSize(orxTEXT *_pstText, orxU32 _u32Offset)
+{
+  /* Checks */
+  orxSTRUCTURE_ASSERT(_pstText);
+
+  orxTEXT_MARKER_DATA astAppliedStyles[orxTEXT_MARKER_TYPE_NUMBER_STYLES];
+  orxENUM             eType;
+  for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
+  {
+    astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+    astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
+  }
+
+  /* Are there any markers at all? Have we traversed all of them? */
+  if ((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0))
+  {
+    orxU32 u32MarkerIndex;
+    orxTEXT_MARKER stMarker;
+    /* There may be more than one marker at this offset. */
+    for(u32MarkerIndex = 0, stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+        (u32MarkerIndex < _pstText->u32MarkerCounter) && (stMarker.u32Offset <= _u32Offset);
+        stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
+    {
+      /* Update the currently applied marker of this type */
+      orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+      if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
+      {
+        astAppliedStyles[eResolvedStyle] = stMarker.stData;
+      }
+    }
+  }
+
+  /* Calculate the size of this glyph */
+  orxVECTOR               vSize          = orxVECTOR_0;
+  orxVECTOR               vCurrentScale  = orxVECTOR_1;
+  const orxCHARACTER_MAP *pstCurrentMap  = orxFont_GetMap(_pstText->pstFont);
+
+  /* Grab the values for the latest scale and font markers for size calculation */
+  if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+  {
+    orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType == orxTEXT_MARKER_TYPE_SCALE);
+    vCurrentScale = astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].vScale;
+  }
+  if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+  {
+    orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
+    pstCurrentMap = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
+  }
+
+  orxASSERT(pstCurrentMap != orxNULL);
+  orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
+
+  orxU32 u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString + _u32Offset, orxNULL);
+
+  /* Gets glyph from UTF-8 table */
+  orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentMap->pstCharacterTable, u32CharacterCodePoint);
+
+  /* Compute size */
+  if (pstGlyph != orxNULL)
+  {
+    vSize.fX = pstGlyph->fWidth                * vCurrentScale.fX;
+    vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
+  }
+  else
+  {
+    vSize.fX = pstCurrentMap->fCharacterHeight * vCurrentScale.fX;
+    vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
+  }
+
+  return vSize;
+}
+
 /** Updates text size
  * @param[in]   _pstText      Concerned text
  */
@@ -998,15 +1070,24 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     }
     else
     {
-    /* NOTE it looks to me like the height is not expanding properly when line breaks get added, at least according to physics debugging */
       orxCHAR  *pc;
       orxSTRING zLastSpace;
+      orxFLOAT  fLineHeight, fLastLineHeight;
+      orxU32    u32MarkerIndex;
 
       /* For all characters */
-      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, (const orxCHAR **)&pc), fHeight = fCharacterHeight, fWidth = orxFLOAT_0, zLastSpace = orxNULL;
+      for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, (const orxCHAR **)&pc), fHeight = fWidth = orxFLOAT_0, zLastSpace = orxNULL, fLineHeight = fLastLineHeight = orxFLOAT_0, u32MarkerIndex = 0;
           u32CharacterCodePoint != orxCHAR_NULL;
           u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, (const orxCHAR **)&pc))
       {
+        /* Calculate what the byte index of the current codepoint is. Since pc has since advanced past the current codepoint, we must subtract the length of the current codepoint from the pointer difference. */
+        orxU32 u32CurrentOffset = (pc - _pstText->zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
+
+        orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32CurrentOffset);
+
+        /* Update current line height */
+        fLineHeight = orxMAX(fLineHeight, vSize.fY);
+
         /* Depending on the character */
         switch(u32CharacterCodePoint)
         {
@@ -1024,11 +1105,41 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
 
           case orxCHAR_LF:
           {
+            /* Update the previous line marker with this line's max height */
+            pstLineMarker->stData.fLineHeight = fLineHeight;
+
             /* Updates height */
-            fHeight += fCharacterHeight;
+            fHeight += fLineHeight;
+
+            /* Are there any markers at all? Have we traversed all of them? */
+            if((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0) && (u32MarkerIndex < _pstText->u32MarkerCounter))
+            {
+              orxTEXT_MARKER stMarker;
+              for(stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+                  (u32MarkerIndex < _pstText->u32MarkerCounter) && (stMarker.u32Offset <= u32CurrentOffset);
+                  stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
+              {
+                /* Update the currently applied marker of this type */
+                orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+                if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
+                {
+                  /* Create a copy of the marker for the rebuilt marker array */
+                  orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+                  orxLOG("Marker @%u [%d]", stMarker.u32Offset, stMarker.stData.eType);
+                }
+              }
+            }
+
+            /* Add a new line marker, replacing the reference to the previous one */
+            orxTEXT_MARKER_DATA stData;
+            orxMemory_Zero(&stData, sizeof(stData));
+            stData.eType = orxTEXT_MARKER_TYPE_LINE_HEIGHT;
+            stData.fLineHeight = fLineHeight;
+            orxASSERT(*(_pstText->zString + u32CurrentOffset) == orxCHAR_LF);
+            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, stData);
 
             /* Should truncate? */
-            if((orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_HEIGHT) != orxFALSE) && (fHeight > _pstText->fHeight))
+            if((orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_HEIGHT) != orxFALSE) && (fHeight + orxMATH_KF_EPSILON >= _pstText->fHeight))
             {
               /* Truncates the string */
               *pc = orxCHAR_NULL;
@@ -1047,10 +1158,11 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           case '\t':
           {
             /* Updates width */
-            fWidth += orxFont_GetCharacterWidth(_pstText->pstFont, u32CharacterCodePoint);
+            fWidth += vSize.fX;
 
             /* Updates last space */
             zLastSpace = pc - 1;
+            fLastLineHeight = fLineHeight;
 
             break;
           }
@@ -1060,7 +1172,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* Finds end of word */
             for(; (u32CharacterCodePoint != ' ') && (u32CharacterCodePoint != '\t') && (u32CharacterCodePoint != orxCHAR_NULL); u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, (const orxCHAR **)&pc))
             {
-              fWidth += orxFont_GetCharacterWidth(_pstText->pstFont, u32CharacterCodePoint);
+              orxU32 u32CurrentOffset = (pc - _pstText->zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
+              orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32CurrentOffset);
+              fWidth += vSize.fX;
+              fLineHeight = orxMAX(fLineHeight, vSize.fY);
             }
 
             /* Gets back to previous character */
@@ -1088,9 +1203,11 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
 
             /* Updates cursor */
             pc = zLastSpace;
+            fLineHeight = fLastLineHeight;
 
             /* Clears last space */
             zLastSpace = orxNULL;
+            fLastLineHeight = orxFLOAT_0;
 
             /* Updates width */
             fWidth = orxFLOAT_0;
@@ -1109,6 +1226,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           }
         }
       }
+      fHeight += fLineHeight;
 
       /* Isn't height fixed? */
       if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_HEIGHT) == orxFALSE)
@@ -1689,8 +1807,6 @@ orxSTATUS orxFASTCALL orxText_SetSize(orxTEXT *_pstText, orxFLOAT _fWidth, orxFL
   orxASSERT(sstText.u32Flags & orxTEXT_KU32_STATIC_FLAG_READY);
   orxSTRUCTURE_ASSERT(_pstText);
   orxASSERT (_fWidth > orxFLOAT_0);
-
-  /* NOTE This needs to remove line height markers and allow updatesize to replace them */
 
   /* Unconstrained? */
   if(_fWidth <= orxFLOAT_0)
