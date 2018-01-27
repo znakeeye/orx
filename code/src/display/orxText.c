@@ -921,7 +921,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     /* Used for building a new marker array that contains line markers */
     orxBANK        *pstNewMarkerBank;
     /* Needed for keeping track of what marker we're on */
-    orxU32 u32MarkerIndex;
+    orxU32          u32MarkerIndex;
 
     /* Gets character height */
     fCharacterHeight = orxFont_GetCharacterHeight(_pstText->pstFont);
@@ -941,16 +941,16 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     /* No fixed size? */
     if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_WIDTH | orxTEXT_KU32_FLAG_FIXED_HEIGHT) == orxFALSE)
     {
-      const orxCHAR  *pc;
-      orxFLOAT        fMaxWidth;
-
-      orxENUM             eType;
       orxTEXT_MARKER_DATA astAppliedStyles[orxTEXT_MARKER_TYPE_NUMBER_STYLES];
+      orxENUM             eType;
       for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
       {
         astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
         astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
       }
+
+      const orxCHAR  *pc;
+      orxFLOAT        fMaxWidth;
 
       /* For all characters */
       for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString, &pc), fHeight = fWidth = fMaxWidth = orxFLOAT_0, u32MarkerIndex = 0;
@@ -982,6 +982,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         orxVECTOR               vSize          = orxVECTOR_0;
         orxVECTOR               vCurrentScale  = orxVECTOR_1;
         const orxCHARACTER_MAP *pstCurrentMap  = orxFont_GetMap(_pstText->pstFont);
+
         /* Grab the values for the latest scale and font markers for size calculation */
         if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
         {
@@ -995,8 +996,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         }
         orxASSERT(pstCurrentMap != orxNULL);
         orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
+
         /* Gets glyph from UTF-8 table */
         orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentMap->pstCharacterTable, u32CharacterCodePoint);
+
         /* Compute size */
         if (pstGlyph != orxNULL)
         {
