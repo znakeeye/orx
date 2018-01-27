@@ -974,7 +974,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             astAppliedStyles[eResolvedStyle] = stMarker.stData;
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
-            pstNewMarker->u32Offset = stMarker.u32Offset;
           }
         }
 
