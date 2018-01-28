@@ -877,15 +877,13 @@ static orxVECTOR orxFASTCALL orxText_GetCharacterSize(orxTEXT *_pstText, orxU32 
   /* Compute size */
   if (pstGlyph != orxNULL)
   {
-    vSize.fX = pstGlyph->fWidth                * vCurrentScale.fX;
-    vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
+    vSize.fX = pstGlyph->fWidth * vCurrentScale.fX;
   }
   else
   {
     vSize.fX = pstCurrentMap->fCharacterHeight * vCurrentScale.fX;
-    vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
   }
-
+  vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
   return vSize;
 }
 
