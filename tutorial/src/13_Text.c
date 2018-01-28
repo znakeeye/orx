@@ -73,7 +73,7 @@ void DebugText(const orxTEXT *_pstText)
     case orxTEXT_MARKER_TYPE_STYLE_DEFAULT:
       orxLOG("  Default = (%d)", stMarker.stData.eTypeOfDefault);
       break;
-    case orxTEXT_MARKER_TYPE_LINE_HEIGHT:
+    case orxTEXT_MARKER_TYPE_LINE:
       orxLOG("  Line Height = %f", stMarker.stData.fLineHeight);
       break;
     default:

@@ -1964,7 +1964,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
           stMarker = _pstMarkerArray[++u32MarkerIndex])
       {
         /* Line height markers are special as they update the max height of the line. */
-        if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_LINE_HEIGHT)
+        if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_LINE)
         {
           /* Assert that the previous character is a newline */
           orxASSERT((u32CurrentOffset == 0 || *(_zString + (u32CurrentOffset - 1)) == orxCHAR_LF) && "Character was %c", *(_zString + (u32CurrentOffset - 1)));
