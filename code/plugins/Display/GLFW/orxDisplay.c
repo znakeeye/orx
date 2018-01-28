@@ -1930,7 +1930,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
   orxTEXT_MARKER_DATA astAppliedStyles[orxTEXT_MARKER_TYPE_NUMBER_STYLES];
   for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
   {
-    astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+    astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_DEFAULT;
     astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
   }
 
@@ -1974,13 +1974,13 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
         else
         {
           /* Resolve "default style" placeholder markers. */
-          orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+          orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
           orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved marker type was [%u] (not a style)", eResolvedStyle);
           /* Update the currently applied marker of this type */
           astAppliedStyles[eResolvedStyle] = stMarker.stData;
           if (eResolvedStyle == orxTEXT_MARKER_TYPE_FONT)
           {
-            if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+            if (stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT)
             {
               orxDisplay_GLFW_PrepareBitmap(_pstFont, _eSmoothing, _eBlendMode);
             }
@@ -2002,18 +2002,18 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
     const orxBITMAP        *pstCurrentFont = _pstFont;
     orxRGBA                 stCurrentColor = {255, 255, 255, 255};
     /* Grab the values for the latest scale and font markers for size calculation */
-    if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+    if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_DEFAULT)
     {
       orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType == orxTEXT_MARKER_TYPE_SCALE);
       vCurrentScale = astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].vScale;
     }
-    if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+    if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_DEFAULT)
     {
       orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
       pstCurrentMap  = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
       pstCurrentFont = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstFont;
     }
-    if (astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+    if (astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].eType != orxTEXT_MARKER_TYPE_DEFAULT)
     {
       orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].eType == orxTEXT_MARKER_TYPE_COLOR);
       stCurrentColor = astAppliedStyles[orxTEXT_MARKER_TYPE_COLOR].stRGBA;

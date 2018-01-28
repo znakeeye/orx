@@ -765,7 +765,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           if (pstFallbackNode == orxNULL)
           {
             /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
-            stFallbackData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+            stFallbackData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
             stFallbackData.eTypeOfDefault = ePopThisType;
           }
           else
@@ -788,7 +788,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
             {
               orxTEXT_MARKER_DATA stData;
               orxMemory_Zero(&stData, sizeof(stData));
-              stData.eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+              stData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
               orxU32 u32CurrentOffset = (stContext.zPositionInOutputString - stContext.zOutputString);
               orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, u32CurrentOffset, stData);
@@ -826,7 +826,7 @@ static orxVECTOR orxFASTCALL orxText_GetCharacterSize(orxTEXT *_pstText, orxU32 
   orxENUM             eType;
   for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
   {
-    astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+    astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_DEFAULT;
     astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
   }
 
@@ -841,7 +841,7 @@ static orxVECTOR orxFASTCALL orxText_GetCharacterSize(orxTEXT *_pstText, orxU32 
         stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
     {
       /* Update the currently applied marker of this type */
-      orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+      orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
       if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
       {
         astAppliedStyles[eResolvedStyle] = stMarker.stData;
@@ -855,12 +855,12 @@ static orxVECTOR orxFASTCALL orxText_GetCharacterSize(orxTEXT *_pstText, orxU32 
   const orxCHARACTER_MAP *pstCurrentMap  = orxFont_GetMap(_pstText->pstFont);
 
   /* Grab the values for the latest scale and font markers for size calculation */
-  if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+  if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_DEFAULT)
   {
     orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType == orxTEXT_MARKER_TYPE_SCALE);
     vCurrentScale = astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].vScale;
   }
-  if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+  if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_DEFAULT)
   {
     orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
     pstCurrentMap = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
@@ -943,7 +943,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       orxENUM             eType;
       for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
       {
-        astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_STYLE_DEFAULT;
+        astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_DEFAULT;
         astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
       }
 
@@ -967,7 +967,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
               stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
           {
             /* Update the currently applied marker of this type */
-            orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+            orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
             astAppliedStyles[eResolvedStyle] = stMarker.stData;
             /* Create a copy of the marker for the rebuilt marker array */
@@ -981,12 +981,12 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
         const orxCHARACTER_MAP *pstCurrentMap  = orxFont_GetMap(_pstText->pstFont);
 
         /* Grab the values for the latest scale and font markers for size calculation */
-        if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+        if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_DEFAULT)
         {
           orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType == orxTEXT_MARKER_TYPE_SCALE);
           vCurrentScale = astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].vScale;
         }
-        if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_STYLE_DEFAULT)
+        if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_DEFAULT)
         {
           orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
           pstCurrentMap = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
@@ -1120,7 +1120,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
                   stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
               {
                 /* Update the currently applied marker of this type */
-                orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_STYLE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+                orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
                 if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
                 {
                   /* Create a copy of the marker for the rebuilt marker array */

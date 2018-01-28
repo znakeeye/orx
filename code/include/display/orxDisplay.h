@@ -188,7 +188,7 @@ typedef enum __orxTEXT_MARKER_TYPE_t
   orxTEXT_MARKER_TYPE_CLEAR,
   orxTEXT_MARKER_TYPE_NUMBER_PARSED, /* Sentinel value for enum boundary of parsed marker types */
   /* Internal marker types */
-  orxTEXT_MARKER_TYPE_STYLE_DEFAULT,
+  orxTEXT_MARKER_TYPE_DEFAULT,
   orxTEXT_MARKER_TYPE_LINE,
   orxTEXT_MARKER_TYPE_NUMBER, /* Sentinel value for enum boundary */
   orxTEXT_MARKER_TYPE_NONE = orxENUM_NONE
