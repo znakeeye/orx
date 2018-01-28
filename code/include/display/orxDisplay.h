@@ -195,9 +195,19 @@ typedef enum __orxTEXT_MARKER_TYPE_t
 } orxTEXT_MARKER_TYPE;
 
 /** Helpers for checking marker type */
-#define orxDisplay_MarkerTypeIsStyle(eType)       (((eType) >= 0) && ((eType) < orxTEXT_MARKER_TYPE_NUMBER_STYLES))
-#define orxDisplay_MarkerTypeIsManipulator(eType) (((eType) > orxTEXT_MARKER_TYPE_NUMBER_STYLES) && ((eType) < orxTEXT_MARKER_TYPE_NUMBER_PARSED))
-#define orxDisplay_MarkerTypeIsParsed(eType)      (orxDisplay_MarkerTypeIsStyle((eType)) || orxDisplay_MarkerTypeIsManipulator((eType)))
+static orxINLINE orxBOOL orxDisplay_MarkerTypeIsStyle(orxTEXT_MARKER_TYPE _eType)
+{
+  return (_eType >= 0) && (_eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES);
+}
+static orxINLINE orxBOOL orxDisplay_MarkerTypeIsManipulator(orxTEXT_MARKER_TYPE _eType)
+{
+  return (_eType > orxTEXT_MARKER_TYPE_NUMBER_STYLES) && (_eType < orxTEXT_MARKER_TYPE_NUMBER_PARSED);
+}
+static orxINLINE orxBOOL orxDisplay_MarkerTypeIsParsed(orxTEXT_MARKER_TYPE _eType)
+{
+  return orxDisplay_MarkerTypeIsStyle(_eType) || orxDisplay_MarkerTypeIsManipulator(_eType);
+}
+
 
 /** Text marker data structure */
 typedef struct __orxTEXT_MARKER_DATA_t {
