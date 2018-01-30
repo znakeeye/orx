@@ -48,6 +48,7 @@
  */
 
 static orxOBJECT *pstScene = orxNULL;
+static orxOBJECT *pstLabel = orxNULL;
 static orxOBJECT *pstCurrentText = orxNULL;
 
 void DebugText(const orxTEXT *_pstText)
@@ -106,7 +107,8 @@ void CycleText(orxBOOL _bNext)
   }
   s32Index = s32Index % u32Size;
   orxLOG("Index is now %d", s32Index);
-  orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
+  const orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
+  orxObject_SetTextString(pstLabel, zObjectName);
   orxLOG("Text object will be %s", zObjectName);
   if (pstCurrentText != orxNULL)
   {
@@ -144,10 +146,11 @@ orxSTATUS orxFASTCALL Init()
   /* Creates viewport */
   orxViewport_CreateFromConfig("Viewport");
 
-  CycleText(orxTRUE);
-
   /* Creates object */
   pstScene = orxObject_CreateFromConfig("Scene");
+  pstLabel = orxObject_CreateFromConfig("Label");
+
+  CycleText(orxTRUE);
 
   /* Done! */
   return orxSTATUS_SUCCESS;
