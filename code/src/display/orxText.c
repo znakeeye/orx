@@ -1226,8 +1226,35 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             *pc = cBackup;
           }
         }
+
+        if (*pc == orxCHAR_NULL)
+        {
+          /* Add final line max height to the total height */
+          fHeight += fLineHeight;
+          /* Update the previous line marker with this line's max height */
+          pstLineMarker->stData.fLineHeight = fLineHeight;
+          /* Are there any markers at all? Have we traversed all of them? */
+          if((_pstText->pstMarkerArray != orxNULL) && (_pstText->u32MarkerCounter > 0) && (u32MarkerIndex < _pstText->u32MarkerCounter))
+          {
+            orxTEXT_MARKER stMarker;
+            for(stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
+                (u32MarkerIndex < _pstText->u32MarkerCounter);
+                stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
+            {
+              orxLOG("Are we adding the following markers?");
+              /* Update the currently applied marker of this type */
+              orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+              if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
+              {
+                /* Create a copy of the marker for the rebuilt marker array */
+                orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+                orxLOG("Marker @%u [%d]", stMarker.u32Offset, stMarker.stData.eType);
+              }
+            }
+          }
+
+        }
       }
-      fHeight += fLineHeight;
 
       /* Isn't height fixed? */
       if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_HEIGHT) == orxFALSE)
