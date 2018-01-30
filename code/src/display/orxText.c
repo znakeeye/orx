@@ -507,7 +507,7 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
   }
   else if (_eType == orxTEXT_MARKER_TYPE_SCALE)
   {
-    orxVECTOR vScale = {0};
+    orxVECTOR vScale = orxVECTOR_1;
     orxSTATUS eStatus = orxString_ToVector(_zString, &vScale, _pzRemaining);
     if (eStatus == orxSTATUS_FAILURE)
     {
