@@ -939,14 +939,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     /* No fixed size? */
     if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_WIDTH | orxTEXT_KU32_FLAG_FIXED_HEIGHT) == orxFALSE)
     {
-      orxTEXT_MARKER_DATA astAppliedStyles[orxTEXT_MARKER_TYPE_NUMBER_STYLES];
-      orxENUM             eType;
-      for (eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
-      {
-        astAppliedStyles[eType].eType = orxTEXT_MARKER_TYPE_DEFAULT;
-        astAppliedStyles[eType].eTypeOfDefault = (orxTEXT_MARKER_TYPE)eType;
-      }
-
       const orxCHAR  *pc;
       orxFLOAT        fMaxWidth;
 
@@ -969,45 +961,11 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* Update the currently applied marker of this type */
             orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
-            astAppliedStyles[eResolvedStyle] = stMarker.stData;
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
           }
         }
-
-        /* Calculate the size of this glyph */
-        orxVECTOR               vSize          = orxVECTOR_0;
-        orxVECTOR               vCurrentScale  = orxVECTOR_1;
-        const orxCHARACTER_MAP *pstCurrentMap  = orxFont_GetMap(_pstText->pstFont);
-
-        /* Grab the values for the latest scale and font markers for size calculation */
-        if (astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType != orxTEXT_MARKER_TYPE_DEFAULT)
-        {
-          orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].eType == orxTEXT_MARKER_TYPE_SCALE);
-          vCurrentScale = astAppliedStyles[orxTEXT_MARKER_TYPE_SCALE].vScale;
-        }
-        if (astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType != orxTEXT_MARKER_TYPE_DEFAULT)
-        {
-          orxASSERT(astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].eType == orxTEXT_MARKER_TYPE_FONT);
-          pstCurrentMap = astAppliedStyles[orxTEXT_MARKER_TYPE_FONT].stFontData.pstMap;
-        }
-        orxASSERT(pstCurrentMap != orxNULL);
-        orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
-
-        /* Gets glyph from UTF-8 table */
-        orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentMap->pstCharacterTable, u32CharacterCodePoint);
-
-        /* Compute size */
-        if (pstGlyph != orxNULL)
-        {
-          vSize.fX = pstGlyph->fWidth                * vCurrentScale.fX;
-          vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
-        }
-        else
-        {
-          vSize.fX = pstCurrentMap->fCharacterHeight * vCurrentScale.fX;
-          vSize.fY = pstCurrentMap->fCharacterHeight * vCurrentScale.fY;
-        }
+        orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32CurrentOffset);
 
         /* Update current line height if necessary */
         pstLineMarker->stData.fLineHeight = orxMAX(pstLineMarker->stData.fLineHeight, vSize.fY);
@@ -1085,7 +1043,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
       {
         /* Calculate what the byte index of the current codepoint is. Since pc has since advanced past the current codepoint, we must subtract the length of the current codepoint from the pointer difference. */
         orxU32 u32CurrentOffset = (pc - _pstText->zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
-
         orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32CurrentOffset);
 
         /* Update current line height */
