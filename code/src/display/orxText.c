@@ -1131,6 +1131,9 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
               }
             }
 
+            /* Set line height to that of the most recent character */
+            fLineHeight = vSize.fY;
+
             /* Add a new line marker, replacing the reference to the previous one */
             orxTEXT_MARKER_DATA stData;
             orxMemory_Zero(&stData, sizeof(stData));
