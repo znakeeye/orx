@@ -1117,7 +1117,6 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             break;
           }
 
-          /* TODO There are other characters that are worth breaking lines on that span more than one byte. Unicode spaces/punctuation are good examples. If anyone were to write an interpreter for text wrapping in another language, this would break pretty badly. */
           case ' ':
           case '\t':
           {
