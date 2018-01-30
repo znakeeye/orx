@@ -1098,6 +1098,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             {
               /* Updates pointer */
               pc++;
+              u32CurrentOffset++;
             }
 
             /* Fall through */
