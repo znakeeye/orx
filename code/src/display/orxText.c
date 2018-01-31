@@ -71,8 +71,6 @@
 
 #define orxTEXT_KZ_MARKER_WARNING             "Invalid text marker [%c%s%s] in [%s]!"
 #define orxTEXT_KC_MARKER_SYNTAX_START        '`'
-/* TODO orxSTRING has alt open/close chars and this should probably follow suit */
-/* TODO it would be good to add a generic argument walker to orxString to ease the walking of delimited strings */
 #define orxTEXT_KC_MARKER_SYNTAX_OPEN         '('
 #define orxTEXT_KC_MARKER_SYNTAX_CLOSE        ')'
 #define orxTEXT_KZ_MARKER_TYPE_FONT           "font"
@@ -619,7 +617,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
     }
     else
     {
-      /* NOTE The following logic does a lot of "if (eType == orxTEXT_MARKER_TYPE_NONE || zSomeOutputString == orxNULL)" and I'm not sure this is going to always be OK. See next note. */
       orxSTRING zEndOfType = orxNULL;
       /* Attempt to parse marker type, which will also advance the string to the first char after the type (if any) */
       orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstParserContext->zPositionInMarkedString, (const orxSTRING *)&zEndOfType);
@@ -633,8 +630,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
         orxSTRING zEndOfValue = orxNULL;
         /* Try to parse marker data if any, which will also advance the string to the first char after the data (if any) */
         orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(eType, zEndOfType, (const orxSTRING *)&zEndOfValue);
-        /* NOTE I noticed that with font in particular, there are two different behaviours currently specified on failure (though not implemented)
-           If the font is invalid it logs a debug message but notes that it should *ignore* the marker as opposed to printing it as plaintext */
         /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
         if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
         {
@@ -643,8 +638,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
           {
             _pstParserContext->zPositionInMarkedString = zEndOfValue;
             _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
-            orxLOG("Last char in output = %c", *_pstParserContext->zPositionInOutputString);
-            orxLOG("Last char in marked = %c", *_pstParserContext->zPositionInMarkedString);
           }
         }
         else
@@ -657,9 +650,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
           }
           else
           {
-            /* NOTE If we start to support other markers without (...) syntax, or make it optional for some markers, we'll need to re-evaluate how this is checked */
-            /* A good example would be adding a feature like `!(color) which pops the last added color even if it's not the most recent marker on the stack */
-            /* Other good examples would be supporting `color() for pushing the default color to the stack as opposed to clearing all colors with, say, `*(color) */
             orxASSERT(eType == orxTEXT_MARKER_TYPE_POP || eType == orxTEXT_MARKER_TYPE_CLEAR);
             _pstParserContext->zPositionInMarkedString = zEndOfType;
           }
@@ -768,7 +758,8 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           /* No markers to pop from any stacks? */
           if (ePopThisType == orxTEXT_MARKER_TYPE_NONE)
           {
-            /* TODO log warning */
+            /* Log warning */
+            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Marker stack is empty! Cannot pop!");
             /* Free the useless marker */
             orxBank_Free(pstMarkerBank, pstNewMarker);
             pstNewMarker = orxNULL;
@@ -838,7 +829,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 
   orxBank_Delete(pstMarkerBank);
   orxBank_Delete(pstMarkerNodeBank);
-  /* TODO double check whether escapes screw up offsets for markers */
   orxString_Delete(_pstText->zString);
   _pstText->zString = zOutputString;
 }
