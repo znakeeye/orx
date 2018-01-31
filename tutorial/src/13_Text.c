@@ -111,26 +111,31 @@ void CycleText(orxBOOL _bNext)
   s32Index += (_bNext ? 1 : -1);
   orxConfig_PushSection("Scene");
   orxU32 u32Size = orxConfig_GetListCounter("TextList");
+  orxConfig_PopSection();
   if(s32Index < 0)
   {
     s32Index = u32Size - 1;
   }
   s32Index = s32Index % u32Size;
   orxLOG("Index is now %d", s32Index);
+  orxConfig_PushSection("Scene");
   const orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
-  orxObject_SetTextString(pstLabel, zObjectName);
-  orxLOG("Text object will be %s", zObjectName);
-  if (pstCurrentText != orxNULL)
-  {
-    orxObject_SetLifeTime(pstCurrentText, orxFLOAT_0);
-  }
-  pstCurrentText = orxObject_CreateFromConfig(zObjectName);
   orxConfig_PopSection();
-  /* Output debug data */
-  orxGRAPHIC *pstGraphic = orxGRAPHIC(orxOBJECT_GET_STRUCTURE(pstCurrentText, GRAPHIC)) ;
-	orxSTRUCTURE *pstStructure = orxGraphic_GetData(pstGraphic);
-  orxTEXT *pstText = orxTEXT(pstStructure);
-  DebugText(pstText);
+  if (orxConfig_HasSection(zObjectName))
+  {
+    orxObject_SetTextString(pstLabel, zObjectName);
+    orxLOG("Text object will be %s", zObjectName);
+    if (pstCurrentText != orxNULL)
+    {
+      orxObject_SetLifeTime(pstCurrentText, orxFLOAT_0);
+    }
+    pstCurrentText = orxObject_CreateFromConfig(zObjectName);
+    /* Output debug data */
+    orxGRAPHIC *pstGraphic = orxGRAPHIC(orxOBJECT_GET_STRUCTURE(pstCurrentText, GRAPHIC)) ;
+    orxSTRUCTURE *pstStructure = orxGraphic_GetData(pstGraphic);
+    orxTEXT *pstText = orxTEXT(pstStructure);
+    DebugText(pstText);
+  }
 }
 
 orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
