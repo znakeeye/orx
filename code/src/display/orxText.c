@@ -571,6 +571,11 @@ static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(orxBANK *_pstMark
   if (u32ArraySize > 0)
   {
     pstMarkerArray = (orxTEXT_MARKER *) orxMemory_Allocate(u32ArraySize, orxMEMORY_TYPE_MAIN);
+    if (pstMarkerArray == orxNULL)
+    {
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker array - are we out of memory?");
+      return orxNULL;
+    }
     for (orxU32 u32Index = 0; u32Index < u32MarkerCounter; u32Index++)
     {
       orxTEXT_MARKER *pstMarker = (orxTEXT_MARKER *) orxBank_GetAtIndex(_pstMarkerBank, u32Index);
@@ -809,6 +814,10 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
               orxU32 u32CurrentOffset = (stContext.zPositionInOutputString - stContext.zOutputString);
               orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, u32CurrentOffset, stData);
+              if (pstMarker == orxNULL)
+              {
+                orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+              }
             }
           }
         }
@@ -956,6 +965,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     stLineData.eType = orxTEXT_MARKER_TYPE_LINE;
     stLineData.fLineHeight = orxFLOAT_0;
     orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, stLineData);
+    if (pstLineMarker == orxNULL)
+    {
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+    }
 
     /* No fixed size? */
     if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_WIDTH | orxTEXT_KU32_FLAG_FIXED_HEIGHT) == orxFALSE)
@@ -984,6 +997,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+            if (pstNewMarker == orxNULL)
+            {
+              orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+            }
           }
         }
         orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32CurrentOffset);
@@ -1027,6 +1044,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             /* We add one here because we want the marker to start on the first character of the next line.
                Line height is only meaningful to the glyphs of that line, and allowing it to show up sooner will throw off the renderer. */
             pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, stData);
+            if (pstLineMarker == orxNULL)
+            {
+              orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+            }
 
             break;
           }
@@ -1107,7 +1128,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
                 {
                   /* Create a copy of the marker for the rebuilt marker array */
                   orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
-                  orxLOG("Marker @%u [%d]", stMarker.u32Offset, stMarker.stData.eType);
+                  if (pstNewMarker == orxNULL)
+                  {
+                    orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+                  }
                 }
               }
             }
@@ -1122,6 +1146,10 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             stData.fLineHeight = fLineHeight;
             orxASSERT(*(_pstText->zString + u32CurrentOffset) == orxCHAR_LF);
             pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, stData);
+            if (pstLineMarker == orxNULL)
+            {
+              orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+            }
 
             /* Should truncate? */
             if((orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_FIXED_HEIGHT) != orxFALSE) && (fHeight + orxMATH_KF_EPSILON >= _pstText->fHeight))
@@ -1224,14 +1252,16 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
                 (u32MarkerIndex < _pstText->u32MarkerCounter);
                 stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
             {
-              orxLOG("Are we adding the following markers?");
               /* Update the currently applied marker of this type */
               orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
               if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
               {
                 /* Create a copy of the marker for the rebuilt marker array */
                 orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
-                orxLOG("Marker @%u [%d]", stMarker.u32Offset, stMarker.stData.eType);
+                if (pstNewMarker == orxNULL)
+                {
+                  orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+                }
               }
             }
           }
