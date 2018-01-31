@@ -1657,20 +1657,26 @@ orxSTATUS orxFASTCALL orxText_GetLineSize(const orxTEXT *_pstText, orxU32 _u32Li
       if(*pc != orxCHAR_NULL)
       {
         orxU32    u32CharacterCodePoint;
-        orxFLOAT  fWidth;
+        orxFLOAT  fWidth, fHeight;
 
         /* For all characters in the line */
-        for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc), fWidth = orxFLOAT_0;
+        for(u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc), fWidth = fHeight = orxFLOAT_0;
             (u32CharacterCodePoint != orxCHAR_CR) && (u32CharacterCodePoint != orxCHAR_LF) && (u32CharacterCodePoint != orxCHAR_NULL);
             u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, &pc))
         {
+          /* Calculate the byte offset of the current character */
+          orxU32 u32Offset = (pc - _pstText->zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
+          /* Get the size of the character */
+          orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32Offset);
+          /* Updates height */
+          fHeight = orxMAX(fHeight, vSize.fY);
           /* Updates width */
-          fWidth += orxFont_GetCharacterWidth(_pstText->pstFont, u32CharacterCodePoint);
+          fWidth += vSize.fX;
         }
 
         /* Stores dimensions */
         *_pfWidth   = fWidth;
-        *_pfHeight  = orxFont_GetCharacterHeight(_pstText->pstFont);
+        *_pfHeight  = fHeight;
 
         /* Updates result */
         eResult = orxSTATUS_SUCCESS;
