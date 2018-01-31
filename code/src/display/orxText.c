@@ -475,17 +475,17 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
         {
           stResult.eType = orxTEXT_MARKER_TYPE_NONE;
           /* Log warning */
-          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Invalid font section name [%s] found for font marker!", zValueString);
+          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Invalid font marker! [%s]", _zString);
         }
         else
         {
           stResult.stFontData.pstMap = orxFont_GetMap(pstFont);
           stResult.stFontData.pstFont = orxTexture_GetBitmap(orxFont_GetTexture(pstFont));
-          /* Advance to character after the marker if asked for */
-          if (_pzRemaining != orxNULL)
-          {
-            *_pzRemaining = zStringClose + 1;
-          }
+        }
+        /* Advance to character after the marker if asked for */
+        if (_pzRemaining != orxNULL)
+        {
+          *_pzRemaining = zStringClose + 1;
         }
       }
     }
@@ -497,6 +497,15 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
     if (eStatus == orxSTATUS_FAILURE)
     {
       stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Invalid color marker! [%s]", _zString);
+      if (_pzRemaining != orxNULL)
+      {
+        const orxSTRING zStringClose = orxString_SearchChar(_zString, orxTEXT_KC_MARKER_SYNTAX_CLOSE);
+        if (zStringClose != orxNULL)
+        {
+          *_pzRemaining = zStringClose + 1;
+        }
+      }
     }
     else
     {
@@ -512,6 +521,15 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
     if (eStatus == orxSTATUS_FAILURE)
     {
       stResult.eType = orxTEXT_MARKER_TYPE_NONE;
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Invalid scale marker! [%s]", _zString);
+      if (_pzRemaining != orxNULL)
+      {
+        const orxSTRING zStringClose = orxString_SearchChar(_zString, orxTEXT_KC_MARKER_SYNTAX_CLOSE);
+        if (zStringClose != orxNULL)
+        {
+          *_pzRemaining = zStringClose + 1;
+        }
+      }
     }
     else
     {
@@ -620,7 +638,14 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
         /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
         if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
         {
-          /* Do nothing - allow it to process this codepoint as plaintext */
+          /* Skip this invalid marker */
+          if (zEndOfValue != orxNULL)
+          {
+            _pstParserContext->zPositionInMarkedString = zEndOfValue;
+            _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+            orxLOG("Last char in output = %c", *_pstParserContext->zPositionInOutputString);
+            orxLOG("Last char in marked = %c", *_pstParserContext->zPositionInMarkedString);
+          }
         }
         else
         {
