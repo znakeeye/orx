@@ -1138,7 +1138,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           default:
           {
             /* Finds end of word */
-            for(; (u32CharacterCodePoint != ' ') && (u32CharacterCodePoint != '\t') && (u32CharacterCodePoint != orxCHAR_CR) && (u32CharacterCodePoint != orxCHAR_LF) && (u32CharacterCodePoint != orxCHAR_NULL); u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, (const orxCHAR **)&pc))
+            for(; (u32CharacterCodePoint != ' ') && (u32CharacterCodePoint != '\t') && (u32CharacterCodePoint != orxCHAR_LF) && (u32CharacterCodePoint != orxCHAR_NULL); u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(pc, (const orxCHAR **)&pc))
             {
               orxU32 u32CurrentOffset = (pc - _pstText->zString) - orxString_GetUTF8CharacterLength(u32CharacterCodePoint);
               orxVECTOR vSize = orxText_GetCharacterSize(_pstText, u32CurrentOffset);
