@@ -53,33 +53,43 @@ static orxOBJECT *pstCurrentText = orxNULL;
 
 void DebugText(const orxTEXT *_pstText)
 {
-  orxLOG("String: %s", orxText_GetString(_pstText));
+  const orxSTRING zString = orxText_GetString(_pstText);
+  orxLOG("String: %s", zString);
+  orxLOG("Markers:");
   const orxTEXT_MARKER *pstMarkerArray = orxText_GetMarkerArray(_pstText);
   orxU32 u32MarkerCount = orxText_GetMarkerCounter(_pstText);
-  for (orxU32 u32Index = 0; u32Index < u32MarkerCount; u32Index++)
+  orxU32 u32Index;
+  for (u32Index = 0; u32Index < u32MarkerCount; u32Index++)
   {
     const orxTEXT_MARKER stMarker = pstMarkerArray[u32Index];
-    orxLOG("Marker @ %u", stMarker.u32Offset);
     switch (stMarker.stData.eType)
     {
     case orxTEXT_MARKER_TYPE_FONT:
-      orxLOG("  Font = (%p, %p, %f)", stMarker.stData.stFontData.pstMap, stMarker.stData.stFontData.pstFont, stMarker.stData.stFontData.pstMap->fCharacterHeight);
+      orxLOG("@%3u Font = (%p, %p, %f)", stMarker.u32Offset, stMarker.stData.stFontData.pstMap, stMarker.stData.stFontData.pstFont, stMarker.stData.stFontData.pstMap->fCharacterHeight);
       break;
     case orxTEXT_MARKER_TYPE_COLOR:
-      orxLOG("  Color = (%u, %u, %u)", stMarker.stData.stRGBA.u8R, stMarker.stData.stRGBA.u8G, stMarker.stData.stRGBA.u8B);
+      orxLOG("@%3u Color = (%u, %u, %u)", stMarker.u32Offset, stMarker.stData.stRGBA.u8R, stMarker.stData.stRGBA.u8G, stMarker.stData.stRGBA.u8B);
       break;
     case orxTEXT_MARKER_TYPE_SCALE:
-      orxLOG("  Scale = (%f, %f, %f)", stMarker.stData.vScale.fX, stMarker.stData.vScale.fY, stMarker.stData.vScale.fZ);
+      orxLOG("@%3u Scale = (%f, %f, %f)", stMarker.u32Offset, stMarker.stData.vScale.fX, stMarker.stData.vScale.fY, stMarker.stData.vScale.fZ);
       break;
     case orxTEXT_MARKER_TYPE_DEFAULT:
-      orxLOG("  Default = (%d)", stMarker.stData.eTypeOfDefault);
+      orxLOG("@%3u Default = (%d)", stMarker.u32Offset, stMarker.stData.eTypeOfDefault);
       break;
     case orxTEXT_MARKER_TYPE_LINE:
-      orxLOG("  Line Height = %f", stMarker.stData.fLineHeight);
+      orxLOG("@%3u Line Height = %f", stMarker.u32Offset, stMarker.stData.fLineHeight);
       break;
     default:
-      orxLOG("  Invalid Type");
+      orxLOG("@%3u Invalid Type", stMarker.u32Offset);
     }
+  }
+  orxU32 u32LineCount = orxText_GetLineCount(_pstText);
+  orxLOG("Line Sizes:");
+  for(u32Index = 0; u32Index < u32LineCount; u32Index++)
+  {
+    orxFLOAT fWidth, fHeight;
+    orxSTATUS eResult = orxText_GetLineSize(_pstText, u32Index, &fWidth, &fHeight);
+    orxLOG("#%3u Line Size = (%f, %f)", u32Index, fWidth, fHeight);
   }
 }
 
