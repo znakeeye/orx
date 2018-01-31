@@ -817,7 +817,12 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   _pstText->zString = zOutputString;
 }
 
-static orxVECTOR orxFASTCALL orxText_GetCharacterSize(orxTEXT *_pstText, orxU32 _u32Offset)
+/** Gets character dimensions
+ * @param[in]   _pstText      Concerned text
+ * @param[in]   _u32Offset    Byte offset of the character in the string to get the size of
+ * @return      orxVECTOR
+ */
+static orxVECTOR orxFASTCALL orxText_GetCharacterSize(const orxTEXT *_pstText, orxU32 _u32Offset)
 {
   /* Checks */
   orxSTRUCTURE_ASSERT(_pstText);
