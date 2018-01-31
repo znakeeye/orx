@@ -653,7 +653,8 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
   /* Process plaintext */
 
   /* Append the codepoint to the output string, having skipped the current one so that the position in the original points to the next codepoint. */
-  orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, _pstParserContext->u32OutputSize, _pstParserContext->u32CharacterCodePoint);
+  orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+  orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, _pstParserContext->u32OutputSize - u32CurrentOffset, _pstParserContext->u32CharacterCodePoint);
   /* Now skip the appended codepoint in the output string so that adding to it in the future doesn't overwrite anything. */
   orxU32 u32AddedCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInOutputString);
   orxASSERT(u32AddedCodePoint == _pstParserContext->u32CharacterCodePoint);
