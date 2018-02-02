@@ -1,6 +1,6 @@
 /* Orx - Portable Game Engine
  *
- * Copyright (c) 2008-2017 Orx-Project
+ * Copyright (c) 2008-2018 Orx-Project
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -2053,7 +2053,7 @@ static orxANIM *orxFASTCALL orxAnimSet_CreateSimpleAnimFromConfig(const orxSTRIN
         /* Creates graphic */
         pstGraphic = orxGraphic_CreateFromConfig(acBuffer);
 
-        /* Reenables display logs */
+        /* Re-enables display logs */
         orxDEBUG_ENABLE_LEVEL(orxDEBUG_LEVEL_DISPLAY, bDebugLevelBackup);
 
         /* Success? */
