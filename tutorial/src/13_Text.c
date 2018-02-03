@@ -155,7 +155,7 @@ orxSTATUS orxFASTCALL Init()
   /* Displays a small hint in console */
   orxLOG("\n* This tutorial creates a viewport/camera couple and multiple objects that display text"
          "\n* You can play with the config parameters in ../13_Text.ini"
-         "\n* After changing them, relaunch the tutorial to see their effects");
+         "\n* Updates made to the config will update in realtime!");
 
   orxEvent_AddHandler(orxEVENT_TYPE_RESOURCE, ConfigEventHandler);
 
