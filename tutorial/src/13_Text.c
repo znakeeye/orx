@@ -99,6 +99,7 @@ void ResetText()
   {
     orxObject_SetLifeTime(pstCurrentText, orxFLOAT_0);
     pstCurrentText = orxObject_CreateFromConfig(orxObject_GetName(pstCurrentText));
+    orxObject_SetTextString(pstLabel, orxObject_GetName(pstCurrentText));
   }
 }
 
