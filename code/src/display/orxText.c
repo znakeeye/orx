@@ -369,9 +369,9 @@ static orxSTATUS orxFASTCALL orxText_EventHandler(const orxEVENT *_pstEvent)
  */
 typedef struct __orxTEXT_MARKER_NODE_t
 {
-  orxLINKLIST_NODE      stNode;
-  orxU32                u32MarkerTally;
-  const orxTEXT_MARKER *pstMarker;
+  orxLINKLIST_NODE      stNode;         /** Mandatory orxLINKLIST node struct */
+  orxU32                u32MarkerTally; /** Disambiguates the order in which markers were added to their dry-run stacks collectively */
+  const orxTEXT_MARKER *pstMarker;      /** The marker */
 } orxTEXT_MARKER_NODE;
 
 typedef struct __orxTEXT_MARKER_PARSER_CONTEXT_t
@@ -400,6 +400,11 @@ static orxBOOL orxText_TryParseMarkerType(const orxSTRING _zString, const orxSTR
   return bResult;
 }
 
+/** Attempts to interpret a string as a marker type name
+ * @param[in]   _zString      The concerned string
+ * @param[out]  _pzRemaining  The rest of the string
+ * @return      orxTEXT_MARKER_TYPE - orxTEXT_MARKER_TYPE_NONE indicates the string is not a marker type
+ */
 static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(const orxSTRING _zString, const orxSTRING *_pzRemaining)
 {
   orxASSERT(_zString != orxNULL);
@@ -433,6 +438,12 @@ static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(const orxSTRING _zString, con
   return eType;
 }
 
+/** Attempts to interpret a string as marker data based on a specified type.
+ * @param[in]   _eType        The marker type to attept to parse data for
+ * @param[in]   _zString      The concerned string
+ * @param[out]  _pzRemaining  The rest of the string
+ * @return      orxTEXT_MARKER_DATA - If the eType of the returned data is orxTEXT_MARKER_TYPE_NONE then the value was invalid.
+ */
 static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, const orxSTRING _zString, const orxSTRING *_pzRemaining)
 {
   orxASSERT(_zString != orxNULL);
@@ -550,18 +561,29 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
   return stResult;
 }
 
-static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32Offset, orxTEXT_MARKER_DATA _stData)
+/** Allocates, intitializes, and returns a marker
+ * @param[in] _pstMarkerBank Bank to allocate with
+ * @param[in] _u32ByteOffset The byte-offset of the marker within its concerned string
+ * @param[in] _stData        The marker data
+ * @return    orxTEXT_MARKER / orxNULL
+ */
+static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32ByteOffset, orxTEXT_MARKER_DATA _stData)
 {
   orxTEXT_MARKER *pstResult = (orxTEXT_MARKER *) orxBank_Allocate(_pstMarkerBank);
   if (pstResult != orxNULL)
   {
-    pstResult->u32Offset = _u32Offset;
+    pstResult->u32Offset = _u32ByteOffset;
     pstResult->stData    = _stData;
   }
   return pstResult;
 }
 
-static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(orxBANK *_pstMarkerBank, orxU32 *_pstArraySizeOut)
+/** Turns an orxBANK into a contiguous array with a corresponding size output.
+ * @param[in]   _pstMarkerBank   Concerned bank
+ * @param[out]  _pstArraySizeOut Number of elements in the returned array
+ * @return      Allocated array of orxTEXT_MARKER
+ */
+static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(const orxBANK *_pstMarkerBank, orxU32 *_pstArraySizeOut)
 {
   orxASSERT(_pstMarkerBank != orxNULL);
   orxASSERT(_pstArraySizeOut != orxNULL);
@@ -587,6 +609,10 @@ static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(orxBANK *_pstMark
   return pstMarkerArray;
 }
 
+/** Gets the first codepoint of the given string and updates it to start at the next codepoint.
+ * @param[inout]   _pzCursor Pointer to the string to walk forward on.
+ * @return         Code of the first UTF-8 character of the string, orxU32_UNDEFINED if it's an invalid character
+ */
 static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
 {
   orxASSERT(_pzCursor != orxNULL);
@@ -682,9 +708,8 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
   return pstResult;
 }
 
-/** Takes style markers out of the text string and places them into an array.
+/** Takes style markers out of the text string and populates the orxTEXT marker array.
  * @param[in]   _pstText      Concerned text
- * @return      A cleaned version of the current string for _pstText
  */
 static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 {
@@ -843,11 +868,11 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 }
 
 /** Gets character dimensions
- * @param[in]   _pstText      Concerned text
- * @param[in]   _u32Offset    Byte offset of the character in the string to get the size of
+ * @param[in]   _pstText       Concerned text
+ * @param[in]   _u32ByteOffset Byte offset of the character in the string to get the size of
  * @return      orxVECTOR
  */
-static orxVECTOR orxFASTCALL orxText_GetCharacterSize(const orxTEXT *_pstText, orxU32 _u32Offset)
+static orxVECTOR orxFASTCALL orxText_GetCharacterSize(const orxTEXT *_pstText, orxU32 _u32ByteOffset)
 {
   /* Checks */
   orxSTRUCTURE_ASSERT(_pstText);
@@ -867,7 +892,7 @@ static orxVECTOR orxFASTCALL orxText_GetCharacterSize(const orxTEXT *_pstText, o
     orxTEXT_MARKER stMarker;
     /* There may be more than one marker at this offset. */
     for(u32MarkerIndex = 0, stMarker = _pstText->pstMarkerArray[u32MarkerIndex];
-        (u32MarkerIndex < _pstText->u32MarkerCounter) && (stMarker.u32Offset <= _u32Offset);
+        (u32MarkerIndex < _pstText->u32MarkerCounter) && (stMarker.u32Offset <= _u32ByteOffset);
         stMarker = _pstText->pstMarkerArray[++u32MarkerIndex])
     {
       /* Update the currently applied marker of this type */
@@ -899,7 +924,7 @@ static orxVECTOR orxFASTCALL orxText_GetCharacterSize(const orxTEXT *_pstText, o
   orxASSERT(pstCurrentMap != orxNULL);
   orxASSERT(pstCurrentMap->pstCharacterTable != orxNULL);
 
-  orxU32 u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString + _u32Offset, orxNULL);
+  orxU32 u32CharacterCodePoint = orxString_GetFirstCharacterCodePoint(_pstText->zString + _u32ByteOffset, orxNULL);
 
   /* Gets glyph from UTF-8 table */
   orxCHARACTER_GLYPH *pstGlyph = (orxCHARACTER_GLYPH *)orxHashTable_Get(pstCurrentMap->pstCharacterTable, u32CharacterCodePoint);
