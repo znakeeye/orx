@@ -1019,6 +1019,11 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
           {
             /* Update the currently applied marker of this type */
             orxTEXT_MARKER_TYPE eResolvedStyle = stMarker.stData.eType == orxTEXT_MARKER_TYPE_DEFAULT ? stMarker.stData.eTypeOfDefault : stMarker.stData.eType;
+            /* Sometimes an orxTEXT will update size with a pre-existing marker array */
+            if (eResolvedStyle == orxTEXT_MARKER_TYPE_LINE)
+            {
+              continue;
+            }
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
             /* Create a copy of the marker for the rebuilt marker array */
             orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
