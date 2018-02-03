@@ -383,7 +383,7 @@ typedef struct __orxTEXT_MARKER_PARSER_CONTEXT_t
   orxSTRING zPositionInOutputString; /** Cursor for the next empty space in the output string */
 } orxTEXT_MARKER_PARSER_CONTEXT;
 
-static orxBOOL orxText_TryParseMarkerType(const orxSTRING _zString, const orxSTRING _zCheckAgainst, const orxSTRING *_pzRemaining)
+static orxBOOL orxText_StringIsOfMarkerType(const orxSTRING _zString, const orxSTRING _zCheckAgainst, const orxSTRING *_pzRemaining)
 {
   orxBOOL bResult = orxFALSE;
   orxU32 u32Length = orxString_GetLength(_zCheckAgainst);
@@ -410,23 +410,23 @@ static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(const orxSTRING _zString, con
   orxASSERT(_zString != orxNULL);
   orxTEXT_MARKER_TYPE eType = orxTEXT_MARKER_TYPE_NONE;
   /* Check for valid marker types */
-  if (orxText_TryParseMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_FONT, _pzRemaining))
+  if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_FONT, _pzRemaining))
   {
     eType = orxTEXT_MARKER_TYPE_FONT;
   }
-  else if (orxText_TryParseMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_COLOR, _pzRemaining))
+  else if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_COLOR, _pzRemaining))
   {
     eType = orxTEXT_MARKER_TYPE_COLOR;
   }
-  else if (orxText_TryParseMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_SCALE, _pzRemaining))
+  else if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_SCALE, _pzRemaining))
   {
     eType = orxTEXT_MARKER_TYPE_SCALE;
   }
-  else if (orxText_TryParseMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_POP, _pzRemaining))
+  else if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_POP, _pzRemaining))
   {
     eType = orxTEXT_MARKER_TYPE_POP;
   }
-  else if (orxText_TryParseMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_CLEAR, _pzRemaining))
+  else if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_CLEAR, _pzRemaining))
   {
     eType = orxTEXT_MARKER_TYPE_CLEAR;
   }
