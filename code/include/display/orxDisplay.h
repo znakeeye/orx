@@ -217,7 +217,8 @@ typedef struct __orxTEXT_MARKER_DATA_t {
     struct
     {
       const orxCHARACTER_MAP  *pstMap;
-      const orxBITMAP         *pstFont;
+      orxBITMAP               *pstFont;
+      orxHANDLE                hReference;
     } stFontData;
     orxRGBA              stRGBA;
     orxVECTOR            vScale;
@@ -229,8 +230,9 @@ typedef struct __orxTEXT_MARKER_DATA_t {
 /** Text marker structure */
 typedef struct __orxTEXT_MARKER_t
 {
-  orxU32                 u32Offset;
-  orxTEXT_MARKER_DATA    stData;
+  orxU32                 u32Offset;     /** Byte-offset in the string after all markers have been removed */
+  orxTEXT_MARKER_TYPE    eOriginalType; /** The original marker type as parsed from the string */
+  orxTEXT_MARKER_DATA    stData;        /** Marker data */
 } orxTEXT_MARKER;
 
 

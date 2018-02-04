@@ -51,6 +51,21 @@ static orxOBJECT *pstScene = orxNULL;
 static orxOBJECT *pstLabel = orxNULL;
 static orxOBJECT *pstCurrentText = orxNULL;
 
+const orxSTRING zMarkerNameTable[orxTEXT_MARKER_TYPE_NUMBER] = {0};
+
+#define ADD_MARKER_STRING(name) zMarkerNameTable[orxTEXT_MARKER_TYPE_ ## name] = orxSTRINGIFY(name)
+void PopulateMarkerNameTable()
+{
+  ADD_MARKER_STRING(FONT);
+  ADD_MARKER_STRING(COLOR);
+  ADD_MARKER_STRING(SCALE);
+  ADD_MARKER_STRING(LINE);
+  ADD_MARKER_STRING(DEFAULT);
+  ADD_MARKER_STRING(POP);
+  ADD_MARKER_STRING(CLEAR);
+  ADD_MARKER_STRING(NONE);
+}
+
 void DebugText(const orxTEXT *_pstText)
 {
   const orxSTRING zString = orxText_GetString(_pstText);
@@ -62,25 +77,26 @@ void DebugText(const orxTEXT *_pstText)
   for (u32Index = 0; u32Index < u32MarkerCount; u32Index++)
   {
     const orxTEXT_MARKER stMarker = pstMarkerArray[u32Index];
+    orxLOG("@%3u %s [%s]:", stMarker.u32Offset, zMarkerNameTable[stMarker.stData.eType], zMarkerNameTable[stMarker.eOriginalType]);
     switch (stMarker.stData.eType)
     {
     case orxTEXT_MARKER_TYPE_FONT:
-      orxLOG("@%3u Font = (%p, %p, %f)", stMarker.u32Offset, stMarker.stData.stFontData.pstMap, stMarker.stData.stFontData.pstFont, stMarker.stData.stFontData.pstMap->fCharacterHeight);
+      orxLOG("      (%p => {%p, %p, %f})", stMarker.stData.stFontData.hReference, stMarker.stData.stFontData.pstMap, stMarker.stData.stFontData.pstFont, stMarker.stData.stFontData.pstMap->fCharacterHeight);
       break;
     case orxTEXT_MARKER_TYPE_COLOR:
-      orxLOG("@%3u Color = (%u, %u, %u)", stMarker.u32Offset, stMarker.stData.stRGBA.u8R, stMarker.stData.stRGBA.u8G, stMarker.stData.stRGBA.u8B);
+      orxLOG("      (%u, %u, %u)", stMarker.stData.stRGBA.u8R, stMarker.stData.stRGBA.u8G, stMarker.stData.stRGBA.u8B);
       break;
     case orxTEXT_MARKER_TYPE_SCALE:
-      orxLOG("@%3u Scale = (%f, %f, %f)", stMarker.u32Offset, stMarker.stData.vScale.fX, stMarker.stData.vScale.fY, stMarker.stData.vScale.fZ);
+      orxLOG("      (%f, %f, %f)", stMarker.stData.vScale.fX, stMarker.stData.vScale.fY, stMarker.stData.vScale.fZ);
       break;
     case orxTEXT_MARKER_TYPE_DEFAULT:
-      orxLOG("@%3u Default = (%d)", stMarker.u32Offset, stMarker.stData.eTypeOfDefault);
+      orxLOG("      (%d => %s)", stMarker.stData.eTypeOfDefault, zMarkerNameTable[stMarker.stData.eTypeOfDefault]);
       break;
     case orxTEXT_MARKER_TYPE_LINE:
-      orxLOG("@%3u Line Height = %f", stMarker.u32Offset, stMarker.stData.fLineHeight);
+      orxLOG("      %f", stMarker.stData.fLineHeight);
       break;
     default:
-      orxLOG("@%3u Invalid Type", stMarker.u32Offset);
+      orxLOG("      Invalid Type");
     }
   }
   orxU32 u32LineCount = orxText_GetLineCount(_pstText);
@@ -152,6 +168,7 @@ orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
  */
 orxSTATUS orxFASTCALL Init()
 {
+  PopulateMarkerNameTable();
   /* Displays a small hint in console */
   orxLOG("\n* This tutorial creates a viewport/camera couple and multiple objects that display text"
          "\n* You can play with the config parameters in ../13_Text.ini"

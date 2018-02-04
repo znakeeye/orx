@@ -401,11 +401,12 @@ static orxBOOL orxText_StringIsOfMarkerType(const orxSTRING _zString, const orxS
 }
 
 /** Attempts to interpret a string as a marker type name
+ * @param[in]   _pstText      The concerned orxTEXT
  * @param[in]   _zString      The concerned string
  * @param[out]  _pzRemaining  The rest of the string
  * @return      orxTEXT_MARKER_TYPE - orxTEXT_MARKER_TYPE_NONE indicates the string is not a marker type
  */
-static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(const orxSTRING _zString, const orxSTRING *_pzRemaining)
+static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(orxTEXT *_pstText, const orxSTRING _zString, const orxSTRING *_pzRemaining)
 {
   orxASSERT(_zString != orxNULL);
   orxTEXT_MARKER_TYPE eType = orxTEXT_MARKER_TYPE_NONE;
@@ -439,12 +440,13 @@ static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(const orxSTRING _zString, con
 }
 
 /** Attempts to interpret a string as marker data based on a specified type.
+ * @param[in]   _pstText      The concerned text
  * @param[in]   _eType        The marker type to attept to parse data for
  * @param[in]   _zString      The concerned string
  * @param[out]  _pzRemaining  The rest of the string
  * @return      orxTEXT_MARKER_DATA - If the eType of the returned data is orxTEXT_MARKER_TYPE_NONE then the value was invalid.
  */
-static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, const orxSTRING _zString, const orxSTRING *_pzRemaining)
+static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT *_pstText, orxTEXT_MARKER_TYPE _eType, const orxSTRING _zString, const orxSTRING *_pzRemaining)
 {
   orxASSERT(_zString != orxNULL);
   orxTEXT_MARKER_DATA stResult;
@@ -488,8 +490,13 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
         }
         else
         {
+          /* Store the raw data that's used by the renderer */
           stResult.stFontData.pstMap = orxFont_GetMap(pstFont);
           stResult.stFontData.pstFont = orxTexture_GetBitmap(orxFont_GetTexture(pstFont));
+          /* Stores a reference to the font */
+          stResult.stFontData.hReference = (orxHANDLE)pstFont;
+          /* Sets owner */
+          orxStructure_SetOwner(pstFont, _pstText);
         }
         /* Advance to character after the marker if asked for */
         if (_pzRemaining != orxNULL)
@@ -567,13 +574,14 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT_MARKER_TYPE _eType, 
  * @param[in] _stData        The marker data
  * @return    orxTEXT_MARKER / orxNULL
  */
-static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32ByteOffset, orxTEXT_MARKER_DATA _stData)
+static orxTEXT_MARKER * orxFASTCALL orxText_CreateMarker(orxBANK *_pstMarkerBank, orxU32 _u32ByteOffset, orxTEXT_MARKER_TYPE _eOriginalType, orxTEXT_MARKER_DATA _stData)
 {
   orxTEXT_MARKER *pstResult = (orxTEXT_MARKER *) orxBank_Allocate(_pstMarkerBank);
   if (pstResult != orxNULL)
   {
-    pstResult->u32Offset = _u32ByteOffset;
-    pstResult->stData    = _stData;
+    pstResult->u32Offset     = _u32ByteOffset;
+    pstResult->eOriginalType = _eOriginalType;
+    pstResult->stData        = _stData;
   }
   return pstResult;
 }
@@ -624,7 +632,7 @@ static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
  * @param[in]   _pstParserContext    The parser context.
  * @return orxTEXT_MARKER pointer if a marker is found / orxNULL if not
  */
-static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxTEXT_MARKER *pstResult = orxNULL;
   orxASSERT(_pstParserContext != orxNULL);
@@ -650,7 +658,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
     {
       orxSTRING zEndOfType = orxNULL;
       /* Attempt to parse marker type, which will also advance the string to the first char after the type (if any) */
-      orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstParserContext->zPositionInMarkedString, (const orxSTRING *)&zEndOfType);
+      orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstText, _pstParserContext->zPositionInMarkedString, (const orxSTRING *)&zEndOfType);
       /* If it's not a valid marker type */
       if (eType == orxTEXT_MARKER_TYPE_NONE || zEndOfType == orxNULL)
       {
@@ -660,7 +668,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
       {
         orxSTRING zEndOfValue = orxNULL;
         /* Try to parse marker data if any, which will also advance the string to the first char after the data (if any) */
-        orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(eType, zEndOfType, (const orxSTRING *)&zEndOfValue);
+        orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(_pstText, eType, zEndOfType, (const orxSTRING *)&zEndOfValue);
         /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
         if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
         {
@@ -686,7 +694,8 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
           }
           /* Create the marker */
           orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
-          pstResult = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, stData);
+          /* Original type is the same as the marker data's type */
+          pstResult = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, stData.eType, stData);
           if (pstResult == orxNULL)
           {
             orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -708,15 +717,59 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxBANK *_pstMarkerBa
   return pstResult;
 }
 
+static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
+{
+  orxU32 u32Index;
+  for (u32Index = 0; u32Index < _pstText->u32MarkerCounter; u32Index++)
+  {
+    orxTEXT_MARKER stMarker = _pstText->pstMarkerArray[u32Index];
+    /* Cleanup for each type */
+    switch(stMarker.eOriginalType)
+    {
+      case orxTEXT_MARKER_TYPE_FONT:
+      {
+        orxFONT *pstFont = (orxFONT *) stMarker.stData.stFontData.hReference;
+        /* Checks */
+        orxSTRUCTURE_ASSERT(pstFont);
+        orxASSERT(stMarker.stData.stFontData.pstMap == orxFont_GetMap(pstFont));
+        orxASSERT(stMarker.stData.stFontData.pstFont == orxTexture_GetBitmap(orxFont_GetTexture(pstFont)));
+        /* Removes its owner */
+        orxStructure_SetOwner(pstFont, orxNULL);
+        /* Deletes it */
+        orxFont_Delete(pstFont);
+        /* Clears it for good measure */
+        stMarker.stData.stFontData.hReference = orxNULL;
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  orxMemory_Free(_pstText->pstMarkerArray);
+  _pstText->pstMarkerArray = orxNULL;
+  _pstText->u32MarkerCounter = 0;
+}
+
 /** Takes style markers out of the text string and populates the orxTEXT marker array.
  * @param[in]   _pstText      Concerned text
  */
 static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
 {
+  /* Checks */
+  orxSTRUCTURE_ASSERT(_pstText);
+
+  /* Clean up any existing markers */
+  if (_pstText->pstMarkerArray != orxNULL)
+  {
+    orxText_DeleteMarkers(_pstText);
+  }
+
+  /* Do nothing if the string is empty */
   if (_pstText->zString == orxNULL || *(_pstText->zString) == orxCHAR_NULL)
   {
     return;
   }
+
   /* Stacks for each marker type - most recent marker is derived from the max character index among the tops of each stack. */
   orxLINKLIST  stMarkerStacks[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
   orxU32       u32StyleMarkerTally = 0;
@@ -741,7 +794,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   /* Walk UTF-8 encoded string */
   while (stContext.u32CharacterCodePoint != orxCHAR_NULL)
   {
-    orxTEXT_MARKER *pstNewMarker = orxText_TryParseMarker(pstMarkerBank, &stContext);
+    orxTEXT_MARKER *pstNewMarker = orxText_TryParseMarker(_pstText, pstMarkerBank, &stContext);
     /* Hit a marker? */
     if (pstNewMarker != orxNULL)
     {
@@ -825,9 +878,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         }
         else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
         {
-          /* Free the manipulator */
-          orxBank_Free(pstMarkerBank, pstNewMarker);
-          pstNewMarker = orxNULL;
           /* Add a default marker for each style type to the marker array */
           for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
           {
@@ -838,13 +888,16 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               stData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
               stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
               orxU32 u32CurrentOffset = (stContext.zPositionInOutputString - stContext.zOutputString);
-              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, u32CurrentOffset, stData);
+              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, u32CurrentOffset, orxTEXT_MARKER_TYPE_CLEAR, stData);
               if (pstMarker == orxNULL)
               {
                 orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
               }
             }
           }
+          /* Free the manipulator (can't re-use since it's creating multiple markers from one) */
+          orxBank_Free(pstMarkerBank, pstNewMarker);
+          pstNewMarker = orxNULL;
         }
         else
         {
@@ -989,7 +1042,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
     orxMemory_Zero(&stLineData, sizeof(stLineData));
     stLineData.eType = orxTEXT_MARKER_TYPE_LINE;
     stLineData.fLineHeight = orxFLOAT_0;
-    orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, stLineData);
+    orxTEXT_MARKER *pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, 0, orxTEXT_MARKER_TYPE_LINE, stLineData);
     if (pstLineMarker == orxNULL)
     {
       orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -1026,7 +1079,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             }
             orxASSERT(orxDisplay_MarkerTypeIsStyle(eResolvedStyle) && "Resolved style is [%u]", eResolvedStyle);
             /* Create a copy of the marker for the rebuilt marker array */
-            orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+            orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.eOriginalType, stMarker.stData);
             if (pstNewMarker == orxNULL)
             {
               orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -1073,7 +1126,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             orxASSERT(*(_pstText->zString + u32CurrentOffset) == orxCHAR_LF);
             /* We add one here because we want the marker to start on the first character of the next line.
                Line height is only meaningful to the glyphs of that line, and allowing it to show up sooner will throw off the renderer. */
-            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, stData);
+            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, orxTEXT_MARKER_TYPE_LINE, stData);
             if (pstLineMarker == orxNULL)
             {
               orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -1157,7 +1210,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
                 if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
                 {
                   /* Create a copy of the marker for the rebuilt marker array */
-                  orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+                  orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.eOriginalType, stMarker.stData);
                   if (pstNewMarker == orxNULL)
                   {
                     orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -1175,7 +1228,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
             stData.eType = orxTEXT_MARKER_TYPE_LINE;
             stData.fLineHeight = fLineHeight;
             orxASSERT(*(_pstText->zString + u32CurrentOffset) == orxCHAR_LF);
-            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, stData);
+            pstLineMarker = orxText_CreateMarker(pstNewMarkerBank, u32CurrentOffset + 1, orxTEXT_MARKER_TYPE_LINE, stData);
             if (pstLineMarker == orxNULL)
             {
               orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -1287,7 +1340,7 @@ static void orxFASTCALL orxText_UpdateSize(orxTEXT *_pstText)
               if(orxDisplay_MarkerTypeIsStyle(eResolvedStyle))
               {
                 /* Create a copy of the marker for the rebuilt marker array */
-                orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.stData);
+                orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(pstNewMarkerBank, stMarker.u32Offset, stMarker.eOriginalType, stMarker.stData);
                 if (pstNewMarker == orxNULL)
                 {
                   orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
@@ -1974,13 +2027,6 @@ orxSTATUS orxFASTCALL orxText_SetString(orxTEXT *_pstText, const orxSTRING _zStr
       orxString_Delete(_pstText->zOriginalString);
       _pstText->zOriginalString = orxNULL;
     }
-  }
-
-  if (_pstText->pstMarkerArray != orxNULL)
-  {
-    orxMemory_Free(_pstText->pstMarkerArray);
-    _pstText->pstMarkerArray = orxNULL;
-    _pstText->u32MarkerCounter = 0;
   }
 
   /* Has new string? */
