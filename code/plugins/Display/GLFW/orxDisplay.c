@@ -1988,6 +1988,7 @@ orxSTATUS orxFASTCALL orxDisplay_GLFW_TransformText(const orxSTRING _zString, co
             {
               orxASSERT(stMarker.stData.stFontData.pstFont != orxNULL);
               orxASSERT(stMarker.stData.stFontData.pstMap != orxNULL);
+              orxDisplay_SetBitmapColor(stMarker.stData.stFontData.pstFont, orx2RGBA(0xFF, 0xFF, 0xFF, 0xFF));
               orxDisplay_GLFW_PrepareBitmap(stMarker.stData.stFontData.pstFont, _eSmoothing, _eBlendMode);
             }
           }
