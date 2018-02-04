@@ -609,7 +609,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(const orxBANK *_p
     for (orxU32 u32Index = 0; u32Index < u32MarkerCounter; u32Index++)
     {
       orxTEXT_MARKER *pstMarker = (orxTEXT_MARKER *) orxBank_GetAtIndex(_pstMarkerBank, u32Index);
-      orxASSERT(pstMarker && "There was a rift in the marker bank at index [%u]! Should be impossible.", u32Index);
+      orxASSERT((pstMarker != orxNULL) && "There was a rift in the marker bank at index [%u]! Should be impossible.", u32Index);
       orxMemory_Copy(&pstMarkerArray[u32Index], pstMarker, sizeof(orxTEXT_MARKER));
     }
   }
@@ -878,6 +878,10 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         }
         else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
         {
+          /* Free the manipulator (can't re-use since it's creating multiple markers from one) */
+          /* We do this before adding new ones to prevent the bank from becoming segmented */
+          orxBank_Free(pstMarkerBank, pstNewMarker);
+          pstNewMarker = orxNULL;
           /* Add a default marker for each style type to the marker array */
           for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
           {
@@ -895,9 +899,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
               }
             }
           }
-          /* Free the manipulator (can't re-use since it's creating multiple markers from one) */
-          orxBank_Free(pstMarkerBank, pstNewMarker);
-          pstNewMarker = orxNULL;
         }
         else
         {
