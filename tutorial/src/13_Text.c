@@ -72,7 +72,7 @@ void DebugText(const orxTEXT *_pstText)
   orxLOG("String: %s", zString);
   orxLOG("Markers:");
   const orxTEXT_MARKER *pstMarkerArray = orxText_GetMarkerArray(_pstText);
-  orxU32 u32MarkerCount = orxText_GetMarkerCounter(_pstText);
+  orxU32 u32MarkerCount = orxText_GetMarkerCount(_pstText);
   orxU32 u32Index;
   for (u32Index = 0; u32Index < u32MarkerCount; u32Index++)
   {
@@ -127,7 +127,7 @@ void CycleText(orxBOOL _bNext)
   static orxS32     s32Index = -1; /* We start at negative one so it increments to 0 on startup */
   s32Index += (_bNext ? 1 : -1);
   orxConfig_PushSection("Scene");
-  orxU32 u32Size = orxConfig_GetListCounter("TextList");
+  orxU32 u32Size = orxConfig_GetListCount("TextList");
   orxConfig_PopSection();
   if(s32Index < 0)
   {

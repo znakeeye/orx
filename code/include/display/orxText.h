@@ -158,9 +158,9 @@ extern orxDLLAPI orxSTATUS orxFASTCALL    orxText_SetFont(orxTEXT *_pstText, orx
 
 /** Gets number of markers
  * @param[in]   _pstText      Concerned text
- * @return      Text marker counter
+ * @return      Text marker count
  */
-extern orxDLLAPI orxU32 orxFASTCALL orxText_GetMarkerCounter(const orxTEXT *_pstText);
+extern orxDLLAPI orxU32 orxFASTCALL orxText_GetMarkerCount(const orxTEXT *_pstText);
 
 /** Gets marker array
  * @param[in] _pstText  Concerned text

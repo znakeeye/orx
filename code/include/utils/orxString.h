@@ -69,6 +69,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifndef __orxWINDOWS__
+  #include <strings.h>
+#endif /* !__orxWINDOWS__ */
+
 #include "debug/orxDebug.h"
 
 
@@ -506,7 +510,7 @@ static orxU32 orxFASTCALL                                 orxString_GetFirstChar
  * @param[in] _zString                  Concerned string
  * @return                              Number of valid unicode characters contained in the string, orxU32_UNDEFINED for an invalid UTF-8 string
  */
-static orxINLINE orxU32                                   orxString_GetCharacterCounter(const orxSTRING _zString)
+static orxINLINE orxU32                                   orxString_GetCharacterCount(const orxSTRING _zString)
 {
   const orxCHAR  *pc;
   orxU32          u32Result;
@@ -1107,7 +1111,7 @@ static orxINLINE orxSTATUS                                orxString_ToFloat(cons
 
 /** Convert a string to a vector
  * @param[in]   _zString        String To convert
- * @param[out]  _pvOutValue     Converted value
+ * @param[out]  _pvOutValue     Converted value. N.B.: if only two components (x, y) are defined, the z component will be set to zero
  * @param[out]  _pzRemaining    If non null, will contain the remaining string after the number conversion
  * @return  orxSTATUS_SUCCESS / orxSTATUS_FAILURE
  */
@@ -1128,6 +1132,11 @@ static orxINLINE orxSTATUS                                orxString_ToVector(con
   if((*zString == orxSTRING_KC_VECTOR_START)
   || (*zString == orxSTRING_KC_VECTOR_START_ALT))
   {
+    orxCHAR cEndMarker;
+
+    /* Gets end marker */
+    cEndMarker = (*zString == orxSTRING_KC_VECTOR_START) ? orxSTRING_KC_VECTOR_END : orxSTRING_KC_VECTOR_END_ALT;
+
     /* Skips all white spaces */
     zString = orxString_SkipWhiteSpaces(zString + 1);
 
@@ -1161,14 +1170,22 @@ static orxINLINE orxSTATUS                                orxString_ToVector(con
               /* Skips all white spaces */
               zString = orxString_SkipWhiteSpaces(zString);
 
-              /* Has a valid ending marker? */
-              if((*zString == orxSTRING_KC_VECTOR_END)
-              || (*zString == orxSTRING_KC_VECTOR_END_ALT))
+              /* Has a valid end marker? */
+              if(*zString == cEndMarker)
               {
                 /* Updates result */
                 eResult = orxSTATUS_SUCCESS;
               }
             }
+          }
+          /* Has a valid end marker? */
+          else if(*zString == cEndMarker)
+          {
+            /* Clears Z component */
+            stValue.fZ = orxFLOAT_0;
+
+            /* Updates result */
+            eResult = orxSTATUS_SUCCESS;
           }
         }
       }

@@ -94,7 +94,7 @@
 
 #define orxCONSOLE_KU32_SCROLL_SIZE                   3
 
-#define orxCONSOLE_KF_INPUT_RESET_FIRST_DELAY         orx2F(0.25f)
+#define orxCONSOLE_KF_INPUT_RESET_FIRST_DELAY         orx2F(0.35f)
 #define orxCONSOLE_KF_INPUT_RESET_DELAY               orx2F(0.05f)
 
 
@@ -186,7 +186,7 @@ orxBOOL orxFASTCALL orxConsole_HistorySaveCallback(const orxSTRING _zSectionName
  */
 static void orxFASTCALL orxConsole_SaveHistory()
 {
-  orxU32          i, u32Counter = 0;
+  orxU32 i, u32Count = 0;
   const orxSTRING azHistoryList[orxCONSOLE_KU32_INPUT_ENTRY_NUMBER];
 
   /* Did we cycle? */
@@ -198,7 +198,7 @@ static void orxFASTCALL orxConsole_SaveHistory()
         i++)
     {
       /* Stores it */
-      azHistoryList[u32Counter++] = sstConsole.astInputEntryList[i].acBuffer;
+      azHistoryList[u32Count++] = sstConsole.astInputEntryList[i].acBuffer;
     }
   }
 
@@ -206,11 +206,11 @@ static void orxFASTCALL orxConsole_SaveHistory()
   for(i = 0; i < sstConsole.u32InputIndex; i++)
   {
     /* Stores it */
-    azHistoryList[u32Counter++] = sstConsole.astInputEntryList[i].acBuffer;
+    azHistoryList[u32Count++] = sstConsole.astInputEntryList[i].acBuffer;
   }
 
   /* Has entries? */
-  if(u32Counter > 0)
+  if(u32Count > 0)
   {
     orxCHAR acBuffer[256];
 
@@ -218,7 +218,7 @@ static void orxFASTCALL orxConsole_SaveHistory()
     orxConfig_PushSection(orxCONSOLE_KZ_CONFIG_SECTION);
 
     /* Stores list */
-    orxConfig_SetListString(orxCONSOLE_KZ_CONFIG_INPUT_HISTORY_LIST, azHistoryList, u32Counter);
+    orxConfig_SetListString(orxCONSOLE_KZ_CONFIG_INPUT_HISTORY_LIST, azHistoryList, u32Count);
 
     /* Pops config section */
     orxConfig_PopSection();
@@ -238,7 +238,7 @@ static void orxFASTCALL orxConsole_SaveHistory()
  */
 static void orxFASTCALL orxConsole_LoadHistory()
 {
-  orxU32 i, u32Counter;
+  orxU32 i, u32Count;
   orxCHAR acBuffer[256];
 
   /* Gets file name */
@@ -254,7 +254,7 @@ static void orxFASTCALL orxConsole_LoadHistory()
   if(orxConfig_HasValue(orxCONSOLE_KZ_CONFIG_INPUT_HISTORY_LIST) != orxFALSE)
   {
     /* For all history entries */
-    for(i = 0, u32Counter = orxMIN(orxConfig_GetListCounter(orxCONSOLE_KZ_CONFIG_INPUT_HISTORY_LIST), orxCONSOLE_KU32_INPUT_ENTRY_NUMBER); i < u32Counter; i++)
+    for(i = 0, u32Count = orxMIN(orxConfig_GetListCount(orxCONSOLE_KZ_CONFIG_INPUT_HISTORY_LIST), orxCONSOLE_KU32_INPUT_ENTRY_NUMBER); i < u32Count; i++)
     {
       orxCONSOLE_INPUT_ENTRY *pstEntry;
 
@@ -268,7 +268,7 @@ static void orxFASTCALL orxConsole_LoadHistory()
     }
 
     /* Updates indices */
-    sstConsole.u32InputIndex = sstConsole.u32HistoryIndex = u32Counter % orxCONSOLE_KU32_INPUT_ENTRY_NUMBER;
+    sstConsole.u32InputIndex = sstConsole.u32HistoryIndex = u32Count % orxCONSOLE_KU32_INPUT_ENTRY_NUMBER;
   }
 
   /* Pops config section */
@@ -1141,23 +1141,23 @@ orxSTATUS orxFASTCALL orxConsole_Init()
       if(eResult != orxSTATUS_FAILURE)
       {
         /* Binds console inputs */
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_TOGGLE, sstConsole.eToggleKeyType, sstConsole.eToggleKeyID, sstConsole.eToggleKeyMode);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_AUTOCOMPLETE, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_AUTOCOMPLETE, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_DELETE, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_DELETE, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_DELETE_AFTER, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_DELETE_AFTER, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_TOGGLE_MODE, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_TOGGLE_MODE, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_ENTER, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_ENTER, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_ENTER, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_ENTER_ALTERNATE, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_PREVIOUS, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_PREVIOUS, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_NEXT, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_NEXT, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_LEFT, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_LEFT, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_RIGHT, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_RIGHT, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_START, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_START, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_END, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_END, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_UP, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_SCROLL_UP, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_DOWN, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_SCROLL_DOWN, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_UP, orxINPUT_TYPE_MOUSE_BUTTON, orxCONSOLE_KE_BUTTON_SCROLL_UP, orxINPUT_MODE_FULL);
-        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_DOWN, orxINPUT_TYPE_MOUSE_BUTTON, orxCONSOLE_KE_BUTTON_SCROLL_DOWN, orxINPUT_MODE_FULL);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_TOGGLE, sstConsole.eToggleKeyType, sstConsole.eToggleKeyID, sstConsole.eToggleKeyMode, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_AUTOCOMPLETE, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_AUTOCOMPLETE, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_DELETE, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_DELETE, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_DELETE_AFTER, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_DELETE_AFTER, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_TOGGLE_MODE, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_TOGGLE_MODE, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_ENTER, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_ENTER, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_ENTER, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_ENTER_ALTERNATE, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_PREVIOUS, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_PREVIOUS, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_NEXT, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_NEXT, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_LEFT, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_LEFT, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_RIGHT, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_RIGHT, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_START, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_START, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_END, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_END, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_UP, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_SCROLL_UP, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_DOWN, orxINPUT_TYPE_KEYBOARD_KEY, orxCONSOLE_KE_KEY_SCROLL_DOWN, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_UP, orxINPUT_TYPE_MOUSE_BUTTON, orxCONSOLE_KE_BUTTON_SCROLL_UP, orxINPUT_MODE_FULL, -1);
+        orxInput_Bind(orxCONSOLE_KZ_INPUT_SCROLL_DOWN, orxINPUT_TYPE_MOUSE_BUTTON, orxCONSOLE_KE_BUTTON_SCROLL_DOWN, orxINPUT_MODE_FULL, -1);
 
         /* Enables set */
         orxInput_EnableSet(orxCONSOLE_KZ_INPUT_SET, orxTRUE);
@@ -1171,7 +1171,7 @@ orxSTATUS orxFASTCALL orxConsole_Init()
         /* Success? */
         if(eResult != orxSTATUS_FAILURE)
         {
-          orxU32  i, u32Counter;
+          orxU32  i, u32Count;
           orxBOOL bDebugLevelBackup;
 
           /* Inits log end index */
@@ -1181,7 +1181,7 @@ orxSTATUS orxFASTCALL orxConsole_Init()
           orxConfig_PushSection(orxCONSOLE_KZ_CONFIG_SECTION);
 
           /* For all keys */
-          for(i = 0, u32Counter = orxConfig_GetKeyCounter(); i < u32Counter; i++)
+          for(i = 0, u32Count = orxConfig_GetKeyCount(); i < u32Count; i++)
           {
             const orxSTRING zKey;
 
@@ -1408,11 +1408,11 @@ orxSTATUS orxFASTCALL orxConsole_SetToggle(orxINPUT_TYPE _eInputType, orxENUM _e
   && (sstConsole.eToggleKeyMode != orxINPUT_MODE_NONE))
   {
     /* Unbinds current toggle */
-    orxInput_Unbind(sstConsole.eToggleKeyType, sstConsole.eToggleKeyID, sstConsole.eToggleKeyMode);
+    orxInput_Unbind(orxCONSOLE_KZ_INPUT_TOGGLE, -1);
   }
 
   /* Binds new toggle */
-  eResult = orxInput_Bind(orxCONSOLE_KZ_INPUT_TOGGLE, _eInputType, _eInputID, _eInputMode);
+  eResult = orxInput_Bind(orxCONSOLE_KZ_INPUT_TOGGLE, _eInputType, _eInputID, _eInputMode, -1);
 
   /* Success? */
   if(eResult != orxSTATUS_FAILURE)
@@ -1539,8 +1539,8 @@ orxSTATUS orxFASTCALL orxConsole_SetFont(const orxFONT *_pstFont)
   /* Has a current font? */
   if(sstConsole.pstFont != orxNULL)
   {
-    /* Updates its reference counter */
-    orxStructure_DecreaseCounter((orxFONT *)sstConsole.pstFont);
+    /* Updates its reference count */
+    orxStructure_DecreaseCount((orxFONT *)sstConsole.pstFont);
   }
 
   /* Is font valid? */
@@ -1549,8 +1549,8 @@ orxSTATUS orxFASTCALL orxConsole_SetFont(const orxFONT *_pstFont)
     /* Stores it */
     sstConsole.pstFont = _pstFont;
 
-    /* Updates its reference counter */
-    orxStructure_IncreaseCounter((orxFONT *)sstConsole.pstFont);
+    /* Updates its reference count */
+    orxStructure_IncreaseCount((orxFONT *)sstConsole.pstFont);
   }
 
   /* Done! */
@@ -1621,11 +1621,11 @@ orxU32 orxFASTCALL orxConsole_GetLogLineLength()
   return u32Result;
 }
 
-/** Gets current completions counter
+/** Gets current completions count
  * @param[out]  _pu32MaxLength Max completion length, orxNULL to ignore
- * @return Current completions counter
+ * @return Current completions count
  */
-orxU32 orxFASTCALL orxConsole_GetCompletionCounter(orxU32 *_pu32MaxLength)
+orxU32 orxFASTCALL orxConsole_GetCompletionCount(orxU32 *_pu32MaxLength)
 {
   orxU32 u32Length = 0, u32Result = 0;
 
@@ -1644,15 +1644,14 @@ orxU32 orxFASTCALL orxConsole_GetCompletionCounter(orxU32 *_pu32MaxLength)
 
     /* Gets start of line */
     orxString_NPrint(acBuffer, sizeof(acBuffer) - 1, "%.*s", pstEntry->u32CursorIndex, pstEntry->acBuffer);
-
-    /* Skips all push markers */
-    for(pc = acBuffer; (*pc == ' ') || (*pc == '\t') || (*pc == orxCOMMAND_KC_PUSH_MARKER); pc++)
+    for(pc = acBuffer + pstEntry->u32CursorIndex; (pc >= acBuffer) && (*pc != ' ') && (*pc != '\t') && (*pc != orxCOMMAND_KC_PUSH_MARKER); pc--)
       ;
+    pc++;
 
     /* Not empty? */
     if(*pc != orxCHAR_NULL)
     {
-      /* Gets completion counter */
+      /* Gets completion count */
       for(u32Result = 0, zCommand = orxCommand_GetNext(pc, orxNULL, orxNULL);
           zCommand != orxNULL;
           u32Result++, zCommand = orxCommand_GetNext(pc, zCommand, orxNULL))
@@ -1708,17 +1707,16 @@ const orxSTRING orxFASTCALL orxConsole_GetCompletion(orxU32 _u32Index, orxBOOL *
 
     /* Gets start of line */
     orxString_NPrint(acBuffer, sizeof(acBuffer) - 1, "%.*s", pstEntry->u32CursorIndex, pstEntry->acBuffer);
-
-    /* Skips all push markers */
-    for(pc = acBuffer; (*pc == ' ') || (*pc == '\t') || (*pc == orxCOMMAND_KC_PUSH_MARKER); pc++)
+    for(pc = acBuffer + pstEntry->u32CursorIndex; (pc >= acBuffer) && (*pc != ' ') && (*pc != '\t') && (*pc != orxCOMMAND_KC_PUSH_MARKER); pc--)
       ;
+    pc++;
 
     /* Not empty? */
     if(*pc != orxCHAR_NULL)
     {
       /* Finds requested completion */
       for(u32CompletionIndex = 0, zResult = orxCommand_GetNext(pc, orxNULL, orxNULL);
-        (u32CompletionIndex < _u32Index) && (zResult != orxNULL);
+          (u32CompletionIndex < _u32Index) && (zResult != orxNULL);
           u32CompletionIndex++, zResult = orxCommand_GetNext(pc, zResult, orxNULL))
         ;
 

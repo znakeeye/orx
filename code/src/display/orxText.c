@@ -596,7 +596,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(const orxBANK *_p
   orxASSERT(_pstMarkerBank != orxNULL);
   orxASSERT(_pstArraySizeOut != orxNULL);
   orxTEXT_MARKER *pstMarkerArray = orxNULL;
-  orxU32 u32MarkerCounter = orxBank_GetCounter(_pstMarkerBank);
+  orxU32 u32MarkerCounter = orxBank_GetCount(_pstMarkerBank);
   orxU32 u32ArraySize = u32MarkerCounter * sizeof(orxTEXT_MARKER);
   if (u32ArraySize > 0)
   {
@@ -885,7 +885,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           /* Add a default marker for each style type to the marker array */
           for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
           {
-            if (orxLinkList_GetCounter(&stMarkerStacks[eType]) > 0)
+            if (orxLinkList_GetCount(&stMarkerStacks[eType]) > 0)
             {
               orxTEXT_MARKER_DATA stData;
               orxMemory_Zero(&stData, sizeof(stData));
@@ -1544,8 +1544,8 @@ orxTEXT *orxFASTCALL orxText_Create()
     /* Inits flags */
     orxStructure_SetFlags(pstResult, orxTEXT_KU32_FLAG_NONE, orxTEXT_KU32_MASK_ALL);
 
-    /* Increases counter */
-    orxStructure_IncreaseCounter(pstResult);
+    /* Increases count */
+    orxStructure_IncreaseCount(pstResult);
   }
   else
   {
@@ -1624,11 +1624,11 @@ orxSTATUS orxFASTCALL orxText_Delete(orxTEXT *_pstText)
   orxASSERT(sstText.u32Flags & orxTEXT_KU32_STATIC_FLAG_READY);
   orxSTRUCTURE_ASSERT(_pstText);
 
-  /* Decreases counter */
-  orxStructure_DecreaseCounter(_pstText);
+  /* Decreases count */
+  orxStructure_DecreaseCount(_pstText);
 
   /* Not referenced? */
-  if(orxStructure_GetRefCounter(_pstText) == 0)
+  if(orxStructure_GetRefCount(_pstText) == 0)
   {
     /* Removes string */
     orxText_SetString(_pstText, orxNULL);
@@ -1772,7 +1772,7 @@ orxSTATUS orxFASTCALL orxText_GetLineSize(const orxTEXT *_pstText, orxU32 _u32Li
 
           case orxCHAR_LF:
           {
-            /* Updates line counter */
+            /* Updates line count */
             u32Line++;
           }
 
@@ -1987,7 +1987,7 @@ orxSTATUS orxFASTCALL orxText_SetSize(orxTEXT *_pstText, orxFLOAT _fWidth, orxFL
           ;
 
         /* Updates extra */
-        *_pzExtra = (pcDst != orxCHAR_NULL) ? pcDst : orxSTRING_EMPTY;
+        *_pzExtra = (*pcDst != orxCHAR_NULL) ? pcDst : orxSTRING_EMPTY;
       }
       else
       {
@@ -2066,8 +2066,8 @@ orxSTATUS orxFASTCALL orxText_SetFont(orxTEXT *_pstText, orxFONT *_pstFont)
     /* Has current font? */
     if(_pstText->pstFont != orxNULL)
     {
-      /* Updates structure reference counter */
-      orxStructure_DecreaseCounter(_pstText->pstFont);
+      /* Updates structure reference count */
+      orxStructure_DecreaseCount(_pstText->pstFont);
 
       /* Internally handled? */
       if(orxStructure_TestFlags(_pstText, orxTEXT_KU32_FLAG_INTERNAL) != orxFALSE)
@@ -2092,8 +2092,8 @@ orxSTATUS orxFASTCALL orxText_SetFont(orxTEXT *_pstText, orxFONT *_pstFont)
       /* Stores it */
       _pstText->pstFont = _pstFont;
 
-      /* Updates its reference counter */
-      orxStructure_IncreaseCounter(_pstFont);
+      /* Updates its reference count */
+      orxStructure_IncreaseCount(_pstFont);
     }
 
     /* Updates text's size */
@@ -2106,9 +2106,9 @@ orxSTATUS orxFASTCALL orxText_SetFont(orxTEXT *_pstText, orxFONT *_pstFont)
 
 /** Gets number of markers
   * @param[in]   _pstText      Concerned text
-  * @return      Text marker counter
+  * @return      Text marker count
   */
-orxU32 orxFASTCALL orxText_GetMarkerCounter(const orxTEXT *_pstText)
+orxU32 orxFASTCALL orxText_GetMarkerCount(const orxTEXT *_pstText)
 {
     orxU32 u32Result;
 

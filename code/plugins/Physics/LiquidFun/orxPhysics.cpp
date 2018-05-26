@@ -905,14 +905,16 @@ static void orxFASTCALL orxPhysics_ApplySimulationResult(orxPHYSICS_BODY *_pstBo
 
 static void orxFASTCALL orxPhysics_LiquidFun_ResetSmoothedStates()
 {
-  orxPHYSICS_BODY          *pstPhysicBody;
-  b2Body                   *poBody;
+  orxPHYSICS_BODY *pstPhysicBody;
 
   /* For all physical bodies */
   for(pstPhysicBody = (orxPHYSICS_BODY*)orxLinkList_GetFirst(&(sstPhysics.stBodyList));
       pstPhysicBody != NULL;
       pstPhysicBody = (orxPHYSICS_BODY*)orxLinkList_GetNext(&(pstPhysicBody->stNode)))
   {
+    b2Body *poBody;
+
+    /* Gets body */
     poBody = pstPhysicBody->poBody;
 
     /* Non-static and awake? */
@@ -933,9 +935,8 @@ static void orxFASTCALL orxPhysics_LiquidFun_ResetSmoothedStates()
  */
 static void orxFASTCALL orxPhysics_LiquidFun_Update(const orxCLOCK_INFO *_pstClockInfo, void *_pContext)
 {
-  orxPHYSICS_EVENT_STORAGE *pstEventStorage;
-  orxPHYSICS_BODY          *pstPhysicBody;
-  b2Body                   *poBody;
+  orxPHYSICS_BODY  *pstPhysicBody;
+  b2Body           *poBody;
 
   /* Profiles */
   orxPROFILER_PUSH_MARKER("orxPhysics_Update");
@@ -1042,7 +1043,8 @@ static void orxFASTCALL orxPhysics_LiquidFun_Update(const orxCLOCK_INFO *_pstClo
   /* Is simulation enabled? */
   if(orxFLAG_TEST(sstPhysics.u32Flags, orxPHYSICS_KU32_STATIC_FLAG_ENABLED))
   {
-    orxU32 u32Steps, i;
+    orxPHYSICS_EVENT_STORAGE *pstEventStorage;
+    orxU32                    u32Steps, i;
 
     /* Stores DT */
     sstPhysics.fLastDT = _pstClockInfo->fDT;
@@ -1345,14 +1347,14 @@ extern "C" orxPHYSICS_BODY_PART *orxFASTCALL orxPhysics_LiquidFun_CreatePart(orx
       orxU32 i;
 
       /* Checks */
-      orxASSERT(_pstBodyPartDef->stMesh.u32VertexCounter > 0);
+      orxASSERT(_pstBodyPartDef->stMesh.u32VertexCount > 0);
       orxASSERT(orxBODY_PART_DEF_KU32_MESH_VERTEX_NUMBER <= b2_maxPolygonVertices);
 
       /* No mirroring? */
       if(_pstBodyPartDef->vScale.fX * _pstBodyPartDef->vScale.fY > orxFLOAT_0)
       {
         /* For all the vertices */
-        for(i = 0; i < _pstBodyPartDef->stMesh.u32VertexCounter; i++)
+        for(i = 0; i < _pstBodyPartDef->stMesh.u32VertexCount; i++)
         {
           /* Sets its vector */
           avVertexList[i].Set(sstPhysics.fDimensionRatio * _pstBodyPartDef->stMesh.avVertices[i].fX * _pstBodyPartDef->vScale.fX, sstPhysics.fDimensionRatio * _pstBodyPartDef->stMesh.avVertices[i].fY * _pstBodyPartDef->vScale.fY);
@@ -1363,7 +1365,7 @@ extern "C" orxPHYSICS_BODY_PART *orxFASTCALL orxPhysics_LiquidFun_CreatePart(orx
         orxS32 iDst;
 
         /* For all the vertices */
-        for(iDst = _pstBodyPartDef->stMesh.u32VertexCounter - 1, i = 0; iDst >= 0; iDst--, i++)
+        for(iDst = _pstBodyPartDef->stMesh.u32VertexCount - 1, i = 0; iDst >= 0; iDst--, i++)
         {
           /* Sets its vector */
           avVertexList[iDst].Set(sstPhysics.fDimensionRatio * _pstBodyPartDef->stMesh.avVertices[i].fX * _pstBodyPartDef->vScale.fX, sstPhysics.fDimensionRatio * _pstBodyPartDef->stMesh.avVertices[i].fY * _pstBodyPartDef->vScale.fY);
@@ -1371,7 +1373,7 @@ extern "C" orxPHYSICS_BODY_PART *orxFASTCALL orxPhysics_LiquidFun_CreatePart(orx
       }
 
       /* Updates shape */
-      stPolygonShape.Set(avVertexList, (int32)_pstBodyPartDef->stMesh.u32VertexCounter);
+      stPolygonShape.Set(avVertexList, (int32)_pstBodyPartDef->stMesh.u32VertexCount);
     }
   }
   else if(orxFLAG_TEST(_pstBodyPartDef->u32Flags, orxBODY_PART_DEF_KU32_FLAG_EDGE))
@@ -1410,18 +1412,18 @@ extern "C" orxPHYSICS_BODY_PART *orxFASTCALL orxPhysics_LiquidFun_CreatePart(orx
   }
   else if(orxFLAG_TEST(_pstBodyPartDef->u32Flags, orxBODY_PART_DEF_KU32_FLAG_CHAIN))
   {
-    b2Vec2       *avVertexList = (b2Vec2 *)alloca(_pstBodyPartDef->stChain.u32VertexCounter * sizeof(b2Vec2));
+    b2Vec2       *avVertexList = (b2Vec2 *)alloca(_pstBodyPartDef->stChain.u32VertexCount * sizeof(b2Vec2));
     orxU32        i;
 
     /* Checks */
-    orxASSERT(_pstBodyPartDef->stChain.u32VertexCounter > 0);
+    orxASSERT(_pstBodyPartDef->stChain.u32VertexCount > 0);
     orxASSERT(_pstBodyPartDef->stChain.avVertices != orxNULL);
 
     /* Stores shape reference */
     stFixtureDef.shape = &stChainShape;
 
     /* For all the vertices */
-    for(i = 0; i < _pstBodyPartDef->stChain.u32VertexCounter; i++)
+    for(i = 0; i < _pstBodyPartDef->stChain.u32VertexCount; i++)
     {
       /* Sets its vector */
       avVertexList[i].Set(sstPhysics.fDimensionRatio * _pstBodyPartDef->stChain.avVertices[i].fX * _pstBodyPartDef->vScale.fX, sstPhysics.fDimensionRatio * _pstBodyPartDef->stChain.avVertices[i].fY * _pstBodyPartDef->vScale.fY);
@@ -1431,12 +1433,12 @@ extern "C" orxPHYSICS_BODY_PART *orxFASTCALL orxPhysics_LiquidFun_CreatePart(orx
     if(_pstBodyPartDef->stChain.bIsLoop != orxFALSE)
     {
       /* Creates loop chain */
-      stChainShape.CreateLoop(avVertexList, _pstBodyPartDef->stChain.u32VertexCounter);
+      stChainShape.CreateLoop(avVertexList, _pstBodyPartDef->stChain.u32VertexCount);
     }
     else
     {
       /* Creates chain */
-      stChainShape.CreateChain(avVertexList, _pstBodyPartDef->stChain.u32VertexCounter);
+      stChainShape.CreateChain(avVertexList, _pstBodyPartDef->stChain.u32VertexCount);
 
       /* Has Previous? */
       if(_pstBodyPartDef->stChain.bHasPrevious != orxFALSE)

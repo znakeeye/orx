@@ -132,7 +132,7 @@ typedef struct __orxSOUND_SAMPLE_t
 {
   orxSOUNDSYSTEM_SAMPLE  *pstData;                      /**< Sound data : 4 */
   orxU32                  u32ID;                        /**< Sample ID : 8 */
-  orxU32                  u32Counter;                   /**< Reference counter : 12 */
+  orxU32                  u32Count;                     /**< Reference count : 12 */
   orxU32                  u32Flags;                     /**< Flags : 16 */
 
 } orxSOUND_SAMPLE;
@@ -202,8 +202,8 @@ static orxINLINE orxSOUND_SAMPLE *orxSound_LoadSample(const orxSTRING _zFileName
   /* Found? */
   if(pstResult != orxNULL)
   {
-    /* Increases its reference counter */
-    pstResult->u32Counter++;
+    /* Increases its reference count */
+    pstResult->u32Count++;
   }
   else
   {
@@ -223,16 +223,16 @@ static orxINLINE orxSOUND_SAMPLE *orxSound_LoadSample(const orxSTRING _zFileName
         /* Should keep in cache? */
         if(_bKeepInCache != orxFALSE)
         {
-          /* Inits its reference counter */
-          pstResult->u32Counter = 1;
+          /* Inits its reference count */
+          pstResult->u32Count = 1;
 
           /* Stores its flags */
           orxFLAG_SET(pstResult->u32Flags, orxSOUND_SAMPLE_KU32_FLAG_INTERNAL | orxSOUND_SAMPLE_KU32_FLAG_CACHED, orxSOUND_SAMPLE_KU32_MASK_ALL);
         }
         else
         {
-          /* Inits its reference counter */
-          pstResult->u32Counter = 0;
+          /* Inits its reference count */
+          pstResult->u32Count = 0;
 
           /* Stores its flags */
           orxFLAG_SET(pstResult->u32Flags, orxSOUND_SAMPLE_KU32_FLAG_INTERNAL, orxSOUND_SAMPLE_KU32_MASK_ALL);
@@ -268,7 +268,7 @@ static orxINLINE void orxSound_UnloadSample(orxSOUND_SAMPLE *_pstSample)
   orxASSERT(_pstSample != orxNULL);
 
   /* Not referenced anymore? */
-  if(_pstSample->u32Counter == 0)
+  if(_pstSample->u32Count == 0)
   {
     /* Is internal? */
     if(orxFLAG_TEST(_pstSample->u32Flags, orxSOUND_SAMPLE_KU32_FLAG_INTERNAL))
@@ -289,8 +289,8 @@ static orxINLINE void orxSound_UnloadSample(orxSOUND_SAMPLE *_pstSample)
   }
   else
   {
-    /* Updates its reference counter */
-    _pstSample->u32Counter--;
+    /* Updates its reference count */
+    _pstSample->u32Count--;
   }
 
   /* Done! */
@@ -769,8 +769,8 @@ static orxSTATUS orxFASTCALL orxSound_EventHandler(const orxEVENT *_pstEvent)
           /* Failed loading? */
           if(bLoaded == orxFALSE)
           {
-            /* Resets its reference counter */
-            pstSample->u32Counter = 0;
+            /* Resets its reference count */
+            pstSample->u32Count = 0;
 
             /* Unloads it */
             orxSound_UnloadSample(pstSample);
@@ -1593,8 +1593,8 @@ orxSOUND *orxFASTCALL orxSound_Create()
   /* Created? */
   if(pstResult != orxNULL)
   {
-    /* Increases counter */
-    orxStructure_IncreaseCounter(pstResult);
+    /* Increases count */
+    orxStructure_IncreaseCount(pstResult);
 
     /* Sets master bus ID */
     orxSound_SetBusID(pstResult, sstSound.u32MasterBusID);
@@ -1721,11 +1721,11 @@ orxSTATUS orxFASTCALL orxSound_Delete(orxSOUND *_pstSound)
   orxASSERT(sstSound.u32Flags & orxSOUND_KU32_STATIC_FLAG_READY);
   orxSTRUCTURE_ASSERT(_pstSound);
 
-  /* Decreases counter */
-  orxStructure_DecreaseCounter(_pstSound);
+  /* Decreases count */
+  orxStructure_DecreaseCount(_pstSound);
 
   /* Not referenced? */
-  if(orxStructure_GetRefCounter(_pstSound) == 0)
+  if(orxStructure_GetRefCount(_pstSound) == 0)
   {
     /* Stops it */
     orxSound_Stop(_pstSound);
@@ -1841,7 +1841,7 @@ orxSOUNDSYSTEM_SAMPLE *orxFASTCALL orxSound_CreateSample(orxU32 _u32ChannelNumbe
         {
           /* Inits it */
           pstSoundSample->pstData     = pstSample;
-          pstSoundSample->u32Counter  = 0;
+          pstSoundSample->u32Count    = 0;
           pstSoundSample->u32ID       = u32ID;
           orxFLAG_SET(pstSoundSample->u32Flags, orxSOUND_SAMPLE_KU32_FLAG_NONE, orxSOUND_SAMPLE_KU32_MASK_ALL);
 
@@ -1936,7 +1936,7 @@ orxSTATUS orxFASTCALL orxSound_DeleteSample(const orxSTRING _zName)
     if(pstSoundSample != orxNULL)
     {
       /* Not referenced anymore? */
-      if(pstSoundSample->u32Counter == 0)
+      if(pstSoundSample->u32Count == 0)
       {
         /* Deletes its data */
         orxSoundSystem_DeleteSample(pstSoundSample->pstData);
@@ -2337,12 +2337,12 @@ orxSTATUS orxFASTCALL orxSound_SetPitch(orxSOUND *_pstSound, orxFLOAT _fPitch)
   return eResult;
 }
 
-/** Sets a sound cursor (ie. play position from beginning)
+/** Sets a sound time (ie. cursor/play position from beginning)
  * @param[in]   _pstSound                             Concerned sound
- * @param[in]   _fCursor                              Cursor position, in seconds
+ * @param[in]   _fTime                                Time, in seconds
  * @return orxSTATUS_SUCCESS / orxSTATSUS_FAILURE
  */
-orxSTATUS orxFASTCALL orxSound_SetCursor(orxSOUND *_pstSound, orxFLOAT _fCursor)
+orxSTATUS orxFASTCALL orxSound_SetTime(orxSOUND *_pstSound, orxFLOAT _fTime)
 {
   orxSTATUS eResult;
 
@@ -2354,10 +2354,10 @@ orxSTATUS orxFASTCALL orxSound_SetCursor(orxSOUND *_pstSound, orxFLOAT _fCursor)
   if(_pstSound->pstData != orxNULL)
   {
     /* Valid? */
-    if((_fCursor >= orxFLOAT_0) && (_fCursor < orxSound_GetDuration(_pstSound)))
+    if((_fTime >= orxFLOAT_0) && (_fTime < orxSound_GetDuration(_pstSound)))
     {
-      /* Sets its cursor */
-      eResult = orxSoundSystem_SetCursor(_pstSound->pstData, _fCursor);
+      /* Sets its time */
+      eResult = orxSoundSystem_SetTime(_pstSound->pstData, _fTime);
     }
     else
     {
@@ -2365,7 +2365,7 @@ orxSTATUS orxFASTCALL orxSound_SetCursor(orxSOUND *_pstSound, orxFLOAT _fCursor)
       eResult = orxSTATUS_FAILURE;
 
       /* Logs message */
-      orxDEBUG_PRINT(orxDEBUG_LEVEL_SOUND, "Sound " orxANSI_KZ_COLOR_FG_GREEN "[%s]" orxANSI_KZ_COLOR_FG_DEFAULT ": " orxANSI_KZ_COLOR_FG_RED "Can't set cursor" orxANSI_KZ_COLOR_FG_DEFAULT " to <%g>: out of bound value, valid range is " orxANSI_KZ_COLOR_FG_YELLOW "[0, %g[" orxANSI_KZ_COLOR_FG_DEFAULT ", ignoring!", orxSound_GetName(_pstSound), _fCursor, orxSound_GetDuration(_pstSound));
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_SOUND, "Sound " orxANSI_KZ_COLOR_FG_GREEN "[%s]" orxANSI_KZ_COLOR_FG_DEFAULT ": " orxANSI_KZ_COLOR_FG_RED "Can't set time" orxANSI_KZ_COLOR_FG_DEFAULT " to <%g>: out of bound value, valid range is " orxANSI_KZ_COLOR_FG_YELLOW "[0, %g[" orxANSI_KZ_COLOR_FG_DEFAULT ", ignoring!", orxSound_GetName(_pstSound), _fTime, orxSound_GetDuration(_pstSound));
     }
   }
   else
@@ -2551,11 +2551,11 @@ orxFLOAT orxFASTCALL orxSound_GetPitch(const orxSOUND *_pstSound)
   return fResult;
 }
 
-/** Gets a sound's cursor (ie. play position from beginning)
+/** Gets a sound's time (ie. cursor/play position from beginning)
  * @param[in]   _pstSound                             Concerned sound
- * @return Sound's cursor position, in seconds
+ * @return Sound's time (cursor/play position), in seconds
  */
-orxFLOAT orxFASTCALL orxSound_GetCursor(const orxSOUND *_pstSound)
+orxFLOAT orxFASTCALL orxSound_GetTime(const orxSOUND *_pstSound)
 {
   orxFLOAT fResult;
 
@@ -2567,7 +2567,7 @@ orxFLOAT orxFASTCALL orxSound_GetCursor(const orxSOUND *_pstSound)
   if(_pstSound->pstData != orxNULL)
   {
     /* Updates result */
-    fResult = orxSoundSystem_GetCursor(_pstSound->pstData);
+    fResult = orxSoundSystem_GetTime(_pstSound->pstData);
   }
   else
   {
