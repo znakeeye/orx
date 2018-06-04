@@ -756,6 +756,41 @@ static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
   _pstText->u32MarkerCounter = 0;
 }
 
+static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+{
+  orxU32 u32PopCount = 0;
+  /* Walk UTF-8 encoded string */
+  while (stContext.u32CharacterCodePoint != orxCHAR_NULL)
+  {
+    if (stContext.u32CharacterCodePoint == ']')
+    {
+      // pop stuff from stack
+      for (; u32PopCount > 0; u32PopCount--)
+      {
+      }
+      /* Exit recursive step */
+      return;
+    }
+    else if (stContext.u32CharacterCodePoint == '[')
+    {
+      orxTEXT_MARKER *pstNewStyle = orxNULL;
+      while (pstNewStyle = orxText_TryParseStyle(_pstText, pstMarkerBank, &stContext))
+      {
+        /* Increment number of things to pop when we hit the end of this level of recursion */
+        u32PopCount++;
+      }
+      if (stContext.u32CharacterCodePoint == ':')
+      {
+        _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+      }
+      else
+      {
+        /* this was a parsing error */
+      }
+    }
+  }
+}
+
 /** Takes style markers out of the text string and populates the orxTEXT marker array.
  * @param[in]   _pstText      Concerned text
  */
