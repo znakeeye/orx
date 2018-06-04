@@ -851,12 +851,13 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
     {
       /* Process plaintext */
 
-      /* Append the codepoint to the output string, having skipped the current one so that the position in the original points to the next codepoint. */
+      /* Append the codepoint to the output string. */
       orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
-      orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, _pstParserContext->u32OutputSize - u32CurrentOffset, _pstParserContext->u32CharacterCodePoint);
-      /* Now skip the appended codepoint in the output string so that adding to it in the future doesn't overwrite anything. */
-      orxU32 u32AddedCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInOutputString);
-      orxASSERT(u32AddedCodePoint == _pstParserContext->u32CharacterCodePoint);
+      orxU32 u32SizeRemaining = (_pstParserContext->u32OutputSize - u32CurrentOffset);
+      orxU32 u32CodePointSize = orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, u32SizeRemaining, _pstParserContext->u32CharacterCodePoint);
+      orxASSERT(u32CodePointSize != orxU32_UNDEFINED);
+      /* Move along so we don't overwrite anything */
+      _pstParserContext->zPositionInOutputString += u32CodePointSize;
     }
   }
 }
