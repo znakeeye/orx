@@ -767,6 +767,60 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
       // pop stuff from stack
       for (; u32PopCount > 0; u32PopCount--)
       {
+        /* Find the most recently added marker */
+        orxU32 u32MaxTally = 0;
+        orxTEXT_MARKER_TYPE ePopThisType = orxTEXT_MARKER_TYPE_NONE;
+        for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
+        {
+          orxTEXT_MARKER_NODE *pstTopNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eType]);
+          if (pstTopNode != orxNULL)
+          {
+            if (pstTopNode->u32MarkerTally > u32MaxTally)
+            {
+              u32MaxTally = pstTopNode->u32MarkerTally;
+              const orxTEXT_MARKER *pstNodeMarker = pstTopNode->pstMarker;
+              orxASSERT(pstNodeMarker != orxNULL);
+              ePopThisType = pstNodeMarker->stData.eType;
+            }
+          }
+        }
+        /* No markers to pop from any stacks? */
+        if (ePopThisType == orxTEXT_MARKER_TYPE_NONE)
+        {
+          /* Log warning */
+          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Marker stack is empty! Cannot pop!");
+          /* Free the useless marker */
+          orxBank_Free(pstMarkerBank, pstNewMarker);
+          pstNewMarker = orxNULL;
+          continue;
+        }
+        orxASSERT(orxDisplay_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
+        /* Get the marker that we'll popping. */
+        orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
+        orxASSERT((pstPoppedNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", ePopThisType);
+        /* Pop stack */
+        orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstPoppedNode);
+        orxASSERT(eOK == orxSTATUS_SUCCESS);
+        orxBank_Free(pstMarkerNodeBank, pstPoppedNode);
+        pstPoppedNode = orxNULL;
+        /* Now get the node that's being fallen back to (if any) */
+        orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
+        orxTEXT_MARKER_DATA stFallbackData;
+        orxMemory_Zero(&stFallbackData, sizeof(stFallbackData));
+        /* Change the pop marker into whatever it needs to fall back to */
+        if (pstFallbackNode == orxNULL)
+        {
+          /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
+          stFallbackData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
+          stFallbackData.eTypeOfDefault = ePopThisType;
+        }
+        else
+        {
+          /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
+          stFallbackData = pstFallbackNode->pstMarker->stData;
+        }
+        /* Modify the new marker to change from a stack pop to whatever it translates into before adding it to the marker array */
+        pstNewMarker->stData = stFallbackData;
       }
       /* Exit recursive step */
       return;
@@ -863,60 +917,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         /* Is it a pop manipulation? */
         if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_POP)
         {
-          /* Find the most recently added marker */
-          orxU32 u32MaxTally = 0;
-          orxTEXT_MARKER_TYPE ePopThisType = orxTEXT_MARKER_TYPE_NONE;
-          for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
-          {
-            orxTEXT_MARKER_NODE *pstTopNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eType]);
-            if (pstTopNode != orxNULL)
-            {
-              if (pstTopNode->u32MarkerTally > u32MaxTally)
-              {
-                u32MaxTally = pstTopNode->u32MarkerTally;
-                const orxTEXT_MARKER *pstNodeMarker = pstTopNode->pstMarker;
-                orxASSERT(pstNodeMarker != orxNULL);
-                ePopThisType = pstNodeMarker->stData.eType;
-              }
-            }
-          }
-          /* No markers to pop from any stacks? */
-          if (ePopThisType == orxTEXT_MARKER_TYPE_NONE)
-          {
-            /* Log warning */
-            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Marker stack is empty! Cannot pop!");
-            /* Free the useless marker */
-            orxBank_Free(pstMarkerBank, pstNewMarker);
-            pstNewMarker = orxNULL;
-            continue;
-          }
-          orxASSERT(orxDisplay_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
-          /* Get the marker that we'll popping. */
-          orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
-          orxASSERT((pstPoppedNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", ePopThisType);
-          /* Pop stack */
-          orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstPoppedNode);
-          orxASSERT(eOK == orxSTATUS_SUCCESS);
-          orxBank_Free(pstMarkerNodeBank, pstPoppedNode);
-          pstPoppedNode = orxNULL;
-          /* Now get the node that's being fallen back to (if any) */
-          orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
-          orxTEXT_MARKER_DATA stFallbackData;
-          orxMemory_Zero(&stFallbackData, sizeof(stFallbackData));
-          /* Change the pop marker into whatever it needs to fall back to */
-          if (pstFallbackNode == orxNULL)
-          {
-            /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
-            stFallbackData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
-            stFallbackData.eTypeOfDefault = ePopThisType;
-          }
-          else
-          {
-            /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
-            stFallbackData = pstFallbackNode->pstMarker->stData;
-          }
-          /* Modify the new marker to change from a stack pop to whatever it translates into before adding it to the marker array */
-          pstNewMarker->stData = stFallbackData;
         }
         else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
         {
