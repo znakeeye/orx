@@ -776,6 +776,19 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
       orxTEXT_MARKER *pstNewStyle = orxNULL;
       while (pstNewStyle = orxText_TryParseStyle(_pstText, pstMarkerBank, &stContext))
       {
+        /* Push marker onto the relevant stack */
+        orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(pstMarkerNodeBank);
+        if (pstNode == orxNULL)
+        {
+          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
+          break;
+        }
+        u32StyleMarkerTally++;
+        pstNode->pstMarker = pstNewMarker;
+        pstNode->u32MarkerTally = u32StyleMarkerTally;
+
+        orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
+
         /* Increment number of things to pop when we hit the end of this level of recursion */
         u32PopCount++;
       }
@@ -842,18 +855,6 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
       orxASSERT(orxDisplay_MarkerTypeIsParsed(pstNewMarker->stData.eType));
       if (orxDisplay_MarkerTypeIsStyle(pstNewMarker->stData.eType))
       {
-        /* Push marker onto the relevant stack */
-        orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(pstMarkerNodeBank);
-        if (pstNode == orxNULL)
-        {
-          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
-          break;
-        }
-        u32StyleMarkerTally++;
-        pstNode->pstMarker = pstNewMarker;
-        pstNode->u32MarkerTally = u32StyleMarkerTally;
-
-        orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
       }
       else if (orxDisplay_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
       {
