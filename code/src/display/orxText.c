@@ -621,6 +621,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_ConvertBankToArray(const orxBANK *_p
  * @param[inout]   _pzCursor Pointer to the string to walk forward on.
  * @return         Code of the first UTF-8 character of the string, orxU32_UNDEFINED if it's an invalid character
  */
+/* TODO every single place this is used, it it working on the same value in the context struct. consider condensing this to only taking in that struct */
 static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
 {
   orxASSERT(_pzCursor != orxNULL);
@@ -883,6 +884,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   }
 
   /* Stacks for each marker type - most recent marker is derived from the max character index among the tops of each stack. */
+  /* TODO: this stacks/tally strategy might not be as clear to read as it would to simply walk backwards down the stack, and it's probably not more efficient. consider rewriting. */
   orxLINKLIST  stMarkerStacks[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
   orxU32       u32StyleMarkerTally = 0;
   /* Bank for marker allocation */
