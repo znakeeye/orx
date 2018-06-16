@@ -681,6 +681,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
   return pstResult;
 }
 
+#if 0
 /** Attempt to parse a marker out of the string. If it isn't a marker, store the relevant characters in an output string.
  * @param[in]   _pstMarkerBank       The bank to use for marker allocation.
  * @param[in]   _pstParserContext    The parser context.
@@ -712,6 +713,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxTEXT *_pstText, or
 
   return pstResult;
 }
+#endif
 
 static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
 {
@@ -746,18 +748,23 @@ static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
   _pstText->u32MarkerCounter = 0;
 }
 
-static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 _u32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxU32 u32PopCount = 0;
   /* Walk UTF-8 encoded string */
-  while (stContext.u32CharacterCodePoint != orxCHAR_NULL)
+  while (_pstParserContext->u32CharacterCodePoint != orxCHAR_NULL)
   {
+    /* Handle escape sequence */
+    if (_pstParserContext->u32CharacterCodePoint == '\\')
+    {
+      _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+    }
     /* Update the character codepoint and advance to the next */
     _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
-
-    if (stContext.u32CharacterCodePoint == ']')
+    if (_pstParserContext->u32CharacterCodePoint == ']')
     {
-      // pop stuff from stack
+      orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+      /* Pop all styles at this recursion depth */
       for (; u32PopCount > 0; u32PopCount--)
       {
         /* Find the most recently added marker */
@@ -765,7 +772,7 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
         orxTEXT_MARKER_TYPE ePopThisType = orxTEXT_MARKER_TYPE_NONE;
         for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
         {
-          orxTEXT_MARKER_NODE *pstTopNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[eType]);
+          orxTEXT_MARKER_NODE *pstTopNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[eType]);
           if (pstTopNode != orxNULL)
           {
             if (pstTopNode->u32MarkerTally > u32MaxTally)
@@ -782,22 +789,19 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
         {
           /* Log warning */
           orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Marker stack is empty! Cannot pop!");
-          /* Free the useless marker */
-          orxBank_Free(pstMarkerBank, pstNewMarker);
-          pstNewMarker = orxNULL;
           continue;
         }
         orxASSERT(orxDisplay_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
         /* Get the marker that we'll popping. */
-        orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
+        orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[ePopThisType]);
         orxASSERT((pstPoppedNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", ePopThisType);
         /* Pop stack */
         orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstPoppedNode);
         orxASSERT(eOK == orxSTATUS_SUCCESS);
-        orxBank_Free(pstMarkerNodeBank, pstPoppedNode);
+        orxBank_Free(_pstNodeBank, pstPoppedNode);
         pstPoppedNode = orxNULL;
         /* Now get the node that's being fallen back to (if any) */
-        orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&stMarkerStacks[ePopThisType]);
+        orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[ePopThisType]);
         orxTEXT_MARKER_DATA stFallbackData;
         orxMemory_Zero(&stFallbackData, sizeof(stFallbackData));
         /* Change the pop marker into whatever it needs to fall back to */
@@ -812,36 +816,43 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
           /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
           stFallbackData = pstFallbackNode->pstMarker->stData;
         }
-        /* Modify the new marker to change from a stack pop to whatever it translates into before adding it to the marker array */
-        pstNewMarker->stData = stFallbackData;
+        /* Add a marker with the fallback data */
+        orxTEXT_MARKER *pstMarker = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, orxTEXT_MARKER_TYPE_CLEAR, stFallbackData);
       }
       /* Exit recursive step */
       return;
     }
-    else if (stContext.u32CharacterCodePoint == '[')
+    else if (_pstParserContext->u32CharacterCodePoint == '[')
     {
       orxTEXT_MARKER *pstNewStyle = orxNULL;
-      while (pstNewStyle = orxText_TryParseStyle(_pstText, pstMarkerBank, &stContext))
+      while (pstNewStyle = orxText_TryParseStyle(_pstText, _pstMarkerBank, _pstParserContext))
       {
         /* Push marker onto the relevant stack */
-        orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(pstMarkerNodeBank);
+        orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(_pstNodeBank);
         if (pstNode == orxNULL)
         {
           orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
           break;
         }
-        u32StyleMarkerTally++;
-        pstNode->pstMarker = pstNewMarker;
-        pstNode->u32MarkerTally = u32StyleMarkerTally;
+        _u32StyleMarkerTally++;
+        pstNode->pstMarker = pstNewStyle;
+        pstNode->u32MarkerTally = _u32StyleMarkerTally;
 
-        orxLinkList_AddEnd(&stMarkerStacks[pstNewMarker->stData.eType], (orxLINKLIST_NODE *)pstNode);
+        orxLinkList_AddEnd(&_astMarkerStacks[pstNewStyle->stData.eType], (orxLINKLIST_NODE *)pstNode);
 
         /* Increment number of things to pop when we hit the end of this level of recursion */
         u32PopCount++;
-      }
-      if (stContext.u32CharacterCodePoint == ':')
-      {
+
         _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+        if (_pstParserContext->u32CharacterCodePoint != ',')
+        {
+          break;
+        }
+      }
+      /* The colon indicates the end of a sequence of styles before the text to apply them to */
+      if (_pstParserContext->u32CharacterCodePoint == ':')
+      {
+        orxText_ParseMarkupRecursive(_pstText, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _u32StyleMarkerTally, _pstParserContext);
       }
       else
       {
@@ -884,8 +895,8 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   }
 
   /* Stacks for each marker type - most recent marker is derived from the max character index among the tops of each stack. */
-  /* TODO: this stacks/tally strategy might not be as clear to read as it would to simply walk backwards down the stack, and it's probably not more efficient. consider rewriting. */
-  orxLINKLIST  stMarkerStacks[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
+  /* TODO: this stacks/tally strategy might not be as clear to read as it would to simply walk backwards down the stack, and it's probably not more efficient. consider rewriting. NOTE: this may be a more direct way of getting the previous style for "undoing" it when we pop it, so consider that when looking at a single-stack approach. */
+  orxLINKLIST  astMarkerStacks[orxTEXT_MARKER_TYPE_NUMBER_STYLES] = {0};
   orxU32       u32StyleMarkerTally = 0;
   /* Bank for marker allocation */
   orxBANK     *pstMarkerBank     = orxBank_Create(orxTEXT_KU32_MARKER_DATA_BANK_SIZE, sizeof(orxTEXT_MARKER),
@@ -905,9 +916,8 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   stContext.zPositionInMarkedString = _pstText->zString;
   stContext.zPositionInOutputString = zOutputString;
 
-  /* Walk UTF-8 encoded string */
-  while (stContext.u32CharacterCodePoint != orxCHAR_NULL)
-  {
+  orxText_ParseMarkupRecursive(_pstText, pstMarkerBank, pstMarkerNodeBank, astMarkerStacks, u32StyleMarkerTally, &stContext);
+  #if 0
     orxTEXT_MARKER *pstNewMarker = orxText_TryParseMarker(_pstText, pstMarkerBank, &stContext);
     /* Hit a marker? */
     if (pstNewMarker != orxNULL)
@@ -933,7 +943,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
           /* Add a default marker for each style type to the marker array */
           for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
           {
-            if (orxLinkList_GetCount(&stMarkerStacks[eType]) > 0)
+            if (orxLinkList_GetCount(&_astMarkerStacks[eType]) > 0)
             {
               orxTEXT_MARKER_DATA stData;
               orxMemory_Zero(&stData, sizeof(stData));
@@ -958,8 +968,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
         orxASSERT(orxFALSE && "Impossible marker type [%d]", pstNewMarker->stData.eType);
       }
     }
-  }
-
+#endif
   /* Store the marker array from the bank */
   _pstText->pstMarkerArray = orxText_ConvertBankToArray(pstMarkerBank, &_pstText->u32MarkerCounter);
 
