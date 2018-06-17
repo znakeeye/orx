@@ -704,75 +704,16 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
   /* Walk UTF-8 encoded string */
   while (_pstParserContext->u32CharacterCodePoint != orxCHAR_NULL)
   {
+    orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+    /* Update the character codepoint and advance to the next */
+    _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
     /* Handle escape sequence */
-    if (_pstParserContext->u32CharacterCodePoint == '\\')
+    orxBOOL bEscape = _pstParserContext->u32CharacterCodePoint == '\\';
+    if (bEscape)
     {
       _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
     }
-    /* Update the character codepoint and advance to the next */
-    _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
-    if (_pstParserContext->u32CharacterCodePoint == ']')
-    {
-      orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
-      /* Pop all styles at this recursion depth */
-      for (; u32PopCount > 0; u32PopCount--)
-      {
-        /* Find the most recently added marker */
-        orxU32 u32MaxTally = 0;
-        orxTEXT_MARKER_TYPE ePopThisType = orxTEXT_MARKER_TYPE_NONE;
-        for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
-        {
-          orxTEXT_MARKER_NODE *pstTopNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[eType]);
-          if (pstTopNode != orxNULL)
-          {
-            if (pstTopNode->u32MarkerTally > u32MaxTally)
-            {
-              u32MaxTally = pstTopNode->u32MarkerTally;
-              const orxTEXT_MARKER *pstNodeMarker = pstTopNode->pstMarker;
-              orxASSERT(pstNodeMarker != orxNULL);
-              ePopThisType = pstNodeMarker->stData.eType;
-            }
-          }
-        }
-        /* No markers to pop from any stacks? */
-        if (ePopThisType == orxTEXT_MARKER_TYPE_NONE)
-        {
-          /* Log warning */
-          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Marker stack is empty! Cannot pop!");
-          continue;
-        }
-        orxASSERT(orxDisplay_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
-        /* Get the marker that we'll popping. */
-        orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[ePopThisType]);
-        orxASSERT((pstPoppedNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", ePopThisType);
-        /* Pop stack */
-        orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstPoppedNode);
-        orxASSERT(eOK == orxSTATUS_SUCCESS);
-        orxBank_Free(_pstNodeBank, pstPoppedNode);
-        pstPoppedNode = orxNULL;
-        /* Now get the node that's being fallen back to (if any) */
-        orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[ePopThisType]);
-        orxTEXT_MARKER_DATA stFallbackData;
-        orxMemory_Zero(&stFallbackData, sizeof(stFallbackData));
-        /* Change the pop marker into whatever it needs to fall back to */
-        if (pstFallbackNode == orxNULL)
-        {
-          /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
-          stFallbackData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
-          stFallbackData.eTypeOfDefault = ePopThisType;
-        }
-        else
-        {
-          /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
-          stFallbackData = pstFallbackNode->pstMarker->stData;
-        }
-        /* Add a marker with the fallback data */
-        orxTEXT_MARKER *pstMarker = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, orxTEXT_MARKER_TYPE_CLEAR, stFallbackData);
-      }
-      /* Exit recursive step */
-      return;
-    }
-    else if (_pstParserContext->u32CharacterCodePoint == '[')
+    if (!bEscape && _pstParserContext->u32CharacterCodePoint == '[')
     {
       orxTEXT_MARKER *pstNewStyle = orxNULL;
       while (pstNewStyle = orxText_TryParseStyle(_pstText, _pstMarkerBank, _pstParserContext))
@@ -802,19 +743,82 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
       /* The colon indicates the end of a sequence of styles before the text to apply them to */
       if (_pstParserContext->u32CharacterCodePoint == ':')
       {
+        /* Recurse */
         orxText_ParseMarkupRecursive(_pstText, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _u32StyleMarkerTally, _pstParserContext);
+
+        /* Pop all styles at this recursion depth */
+        for (; u32PopCount > 0; u32PopCount--)
+        {
+          /* Find the most recently added marker */
+          orxU32 u32MaxTally = 0;
+          orxTEXT_MARKER_TYPE ePopThisType = orxTEXT_MARKER_TYPE_NONE;
+          for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
+          {
+            orxTEXT_MARKER_NODE *pstTopNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[eType]);
+            if (pstTopNode != orxNULL)
+            {
+              if (pstTopNode->u32MarkerTally > u32MaxTally)
+              {
+                u32MaxTally = pstTopNode->u32MarkerTally;
+                const orxTEXT_MARKER *pstNodeMarker = pstTopNode->pstMarker;
+                orxASSERT(pstNodeMarker != orxNULL);
+                ePopThisType = pstNodeMarker->stData.eType;
+              }
+            }
+          }
+          /* No markers to pop from any stacks? */
+          if (ePopThisType == orxTEXT_MARKER_TYPE_NONE)
+          {
+            /* Log warning */
+            orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Marker stack is empty! Cannot pop!");
+            continue;
+          }
+          orxASSERT(orxDisplay_MarkerTypeIsStyle(ePopThisType) && "Most recently pushed marker type [%d] is not a style? How?", ePopThisType);
+          /* Get the marker that we'll popping. */
+          orxTEXT_MARKER_NODE *pstPoppedNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[ePopThisType]);
+          orxASSERT((pstPoppedNode != orxNULL) && "Marker type [%d] was ostensibly valid, how can the top node for it be null?", ePopThisType);
+          /* Pop stack */
+          orxSTATUS eOK = orxLinkList_Remove((orxLINKLIST_NODE *) pstPoppedNode);
+          orxASSERT(eOK == orxSTATUS_SUCCESS);
+          orxBank_Free(_pstNodeBank, pstPoppedNode);
+          pstPoppedNode = orxNULL;
+          /* Now get the node that's being fallen back to (if any) */
+          orxTEXT_MARKER_NODE *pstFallbackNode = (orxTEXT_MARKER_NODE *) orxLinkList_GetLast(&_astMarkerStacks[ePopThisType]);
+          orxTEXT_MARKER_DATA stFallbackData;
+          orxMemory_Zero(&stFallbackData, sizeof(stFallbackData));
+          /* Change the pop marker into whatever it needs to fall back to */
+          if (pstFallbackNode == orxNULL)
+          {
+            /* If we ran out of markers of the type we're popping, we must add a marker with data that indicates that we're reverting to a default value. */
+            stFallbackData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
+            stFallbackData.eTypeOfDefault = ePopThisType;
+          }
+          else
+          {
+            /* If we have a previous marker of this type, we must add a new marker with the data of that previous marker */
+            stFallbackData = pstFallbackNode->pstMarker->stData;
+          }
+          /* Add a marker with the fallback data */
+          u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+          orxTEXT_MARKER *pstMarker = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, orxTEXT_MARKER_TYPE_POP, stFallbackData);
+        }
       }
       else
       {
         /* this was a parsing error */
       }
     }
+    else if (!bEscape && _pstParserContext->u32CharacterCodePoint == ']')
+    {
+      /* Exit recursive step */
+      return;
+    }
     else
     {
       /* Process plaintext */
 
       /* Append the codepoint to the output string. */
-      orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+      u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
       orxU32 u32SizeRemaining = (_pstParserContext->u32OutputSize - u32CurrentOffset);
       orxU32 u32CodePointSize = orxString_PrintUTF8Character(_pstParserContext->zPositionInOutputString, u32SizeRemaining, _pstParserContext->u32CharacterCodePoint);
       orxASSERT(u32CodePointSize != orxU32_UNDEFINED);
