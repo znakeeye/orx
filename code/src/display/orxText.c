@@ -403,7 +403,7 @@ static orxBOOL orxText_StringIsOfMarkerType(const orxSTRING _zString, const orxS
 /** Attempts to interpret a string as a marker type name
  * @param[in]   _pstText      The concerned orxTEXT
  * @param[in]   _zString      The concerned string
- * @param[out]  _pzRemaining  The rest of the string
+ * @param[out]  _pzRemaining  The rest of the string (if not valid type it will not be modified)
  * @return      orxTEXT_MARKER_TYPE - orxTEXT_MARKER_TYPE_NONE indicates the string is not a marker type
  */
 static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(orxTEXT *_pstText, const orxSTRING _zString, const orxSTRING *_pzRemaining)
@@ -614,6 +614,9 @@ static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
 
 static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
+  /* TODO parse whitespace */
+  /* TODO I don't think a lot of the assumptions made when writing this still hold. Particularly how failure is handled - I have not defined that for the new syntax yet */
+  /* TODO fix debug warning output missing style typename */
   orxTEXT_MARKER *pstResult = orxNULL;
   orxSTRING zEndOfType = orxNULL;
   /* Attempt to parse marker type, which will also advance the string to the first char after the type (if any) */
@@ -622,6 +625,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
   if (eType == orxTEXT_MARKER_TYPE_NONE || zEndOfType == orxNULL)
   {
     /* Do nothing - allow it to process this codepoint as plaintext */
+    /* TODO I don't think the mentioned plaintext property holds anymore with the new syntax */
   }
   else
   {
