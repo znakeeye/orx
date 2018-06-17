@@ -423,14 +423,6 @@ static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(orxTEXT *_pstText, const orxS
   {
     eType = orxTEXT_MARKER_TYPE_SCALE;
   }
-  else if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_POP, _pzRemaining))
-  {
-    eType = orxTEXT_MARKER_TYPE_POP;
-  }
-  else if (orxText_StringIsOfMarkerType(_zString, orxTEXT_KZ_MARKER_TYPE_CLEAR, _pzRemaining))
-  {
-    eType = orxTEXT_MARKER_TYPE_CLEAR;
-  }
   else
   {
     /* If no valid types were found this will return the NONE type */
@@ -552,14 +544,6 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT *_pstText, orxTEXT_M
       stResult.vScale = vScale;
     }
   }
-  else if (_eType == orxTEXT_MARKER_TYPE_POP)
-  {
-    /* Currently marker stack manipulators possess no arguments, so trivially succeed */
-  }
-  else if (_eType == orxTEXT_MARKER_TYPE_CLEAR)
-  {
-    /* Currently marker stack manipulators possess no arguments, so trivially succeed */
-  }
   else
   {
     orxASSERT(orxFALSE && "Invalid marker type [%d]!", _eType);
@@ -664,7 +648,7 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
       }
       else
       {
-        orxASSERT(eType == orxTEXT_MARKER_TYPE_POP || eType == orxTEXT_MARKER_TYPE_CLEAR);
+        orxASSERT(eType >= orxTEXT_MARKER_TYPE_NUMBER_STYLES);
         _pstParserContext->zPositionInMarkedString = zEndOfType;
       }
       /* Create the marker */
@@ -680,40 +664,6 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
   }
   return pstResult;
 }
-
-#if 0
-/** Attempt to parse a marker out of the string. If it isn't a marker, store the relevant characters in an output string.
- * @param[in]   _pstMarkerBank       The bank to use for marker allocation.
- * @param[in]   _pstParserContext    The parser context.
- * @return orxTEXT_MARKER pointer if a marker is found / orxNULL if not
- */
-static orxTEXT_MARKER * orxFASTCALL orxText_TryParseMarker(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
-{
-  orxTEXT_MARKER *pstResult = orxNULL;
-  orxASSERT(_pstParserContext != orxNULL);
-  orxASSERT(_pstParserContext->zPositionInMarkedString != orxNULL);
-  orxASSERT(_pstParserContext->zPositionInOutputString != orxNULL);
-
-  /* Does it look like a marker? */
-  if (_pstParserContext->u32CharacterCodePoint == orxTEXT_KC_MARKER_SYNTAX_START)
-  {
-    /* Peek at the next one */
-    orxU32 u32Peek = orxString_GetFirstCharacterCodePoint(_pstParserContext->zPositionInMarkedString, orxNULL);
-    /* Is this an escape? */
-    if (u32Peek == orxTEXT_KC_MARKER_SYNTAX_START)
-    {
-      /* Skip over the peeked codepoint */
-      _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
-      /* Do nothing - allow it to process this codepoint as plaintext */
-    }
-    else
-    {
-    }
-  }
-
-  return pstResult;
-}
-#endif
 
 static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
 {
@@ -917,58 +867,7 @@ static void orxFASTCALL orxText_ProcessMarkedString(orxTEXT *_pstText)
   stContext.zPositionInOutputString = zOutputString;
 
   orxText_ParseMarkupRecursive(_pstText, pstMarkerBank, pstMarkerNodeBank, astMarkerStacks, u32StyleMarkerTally, &stContext);
-  #if 0
-    orxTEXT_MARKER *pstNewMarker = orxText_TryParseMarker(_pstText, pstMarkerBank, &stContext);
-    /* Hit a marker? */
-    if (pstNewMarker != orxNULL)
-    {
-      orxASSERT(orxDisplay_MarkerTypeIsParsed(pstNewMarker->stData.eType));
-      if (orxDisplay_MarkerTypeIsStyle(pstNewMarker->stData.eType))
-      {
-      }
-      else if (orxDisplay_MarkerTypeIsManipulator(pstNewMarker->stData.eType))
-      {
-        /* Manipulate relevant marker stack based on the manipulator */
 
-        /* Is it a pop manipulation? */
-        if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_POP)
-        {
-        }
-        else if (pstNewMarker->stData.eType == orxTEXT_MARKER_TYPE_CLEAR)
-        {
-          /* Free the manipulator (can't re-use since it's creating multiple markers from one) */
-          /* We do this before adding new ones to prevent the bank from becoming segmented */
-          orxBank_Free(pstMarkerBank, pstNewMarker);
-          pstNewMarker = orxNULL;
-          /* Add a default marker for each style type to the marker array */
-          for (orxENUM eType = 0; eType < orxTEXT_MARKER_TYPE_NUMBER_STYLES; eType++)
-          {
-            if (orxLinkList_GetCount(&_astMarkerStacks[eType]) > 0)
-            {
-              orxTEXT_MARKER_DATA stData;
-              orxMemory_Zero(&stData, sizeof(stData));
-              stData.eType = orxTEXT_MARKER_TYPE_DEFAULT;
-              stData.eTypeOfDefault = (orxTEXT_MARKER_TYPE) eType;
-              orxU32 u32CurrentOffset = (stContext.zPositionInOutputString - stContext.zOutputString);
-              orxTEXT_MARKER *pstMarker = orxText_CreateMarker(pstMarkerBank, u32CurrentOffset, orxTEXT_MARKER_TYPE_CLEAR, stData);
-              if (pstMarker == orxNULL)
-              {
-                orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
-              }
-            }
-          }
-        }
-        else
-        {
-          orxASSERT(orxFALSE && "Unimplemented marker type [%d]", pstNewMarker->stData.eType);
-        }
-      }
-      else
-      {
-        orxASSERT(orxFALSE && "Impossible marker type [%d]", pstNewMarker->stData.eType);
-      }
-    }
-#endif
   /* Store the marker array from the bank */
   _pstText->pstMarkerArray = orxText_ConvertBankToArray(pstMarkerBank, &_pstText->u32MarkerCounter);
 
