@@ -618,9 +618,18 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
   /* TODO I don't think a lot of the assumptions made when writing this still hold. Particularly how failure is handled - I have not defined that for the new syntax yet */
   /* TODO fix debug warning output missing style typename */
   orxTEXT_MARKER *pstResult = orxNULL;
+  const orxSTRING zEndOfWhitespace = orxNULL;
   orxSTRING zEndOfType = orxNULL;
+  /* Skip whitespace before type */
+  zEndOfWhitespace = orxString_SkipWhiteSpaces(_pstParserContext->zPositionInMarkedString);
+  if (zEndOfWhitespace == orxSTRING_EMPTY)
+  {
+    /* We are apparently done - this means the user starting doing markup but didn't finish it */
+    orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", _pstParserContext->zPositionInMarkedString);
+    return pstResult;
+  }
   /* Attempt to parse marker type, which will also advance the string to the first char after the type (if any) */
-  orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstText, _pstParserContext->zPositionInMarkedString, (const orxSTRING *)&zEndOfType);
+  orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstText, zEndOfWhitespace, (const orxSTRING *)&zEndOfType);
   /* If it's not a valid marker type */
   if (eType == orxTEXT_MARKER_TYPE_NONE || zEndOfType == orxNULL)
   {
@@ -629,9 +638,17 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
   }
   else
   {
+    /* Skip whitespace before value */
+    zEndOfWhitespace = orxString_SkipWhiteSpaces(zEndOfType);
+    if (zEndOfWhitespace == orxSTRING_EMPTY)
+    {
+      /* We are apparently done - this means the user starting doing markup but didn't finish it */
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", _pstParserContext->zPositionInMarkedString);
+      return pstResult;
+    }
     orxSTRING zEndOfValue = orxNULL;
     /* Try to parse marker data if any, which will also advance the string to the first char after the data (if any) */
-    orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(_pstText, eType, zEndOfType, (const orxSTRING *)&zEndOfValue);
+    orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(_pstText, eType, zEndOfWhitespace, (const orxSTRING *)&zEndOfValue);
     /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
     if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
     {
@@ -652,9 +669,19 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
       }
       else
       {
+        /* TODO This might not make sense anymore now that stack manipulators aren't a real marker type anymore */
         orxASSERT(eType >= orxTEXT_MARKER_TYPE_NUMBER_STYLES);
         _pstParserContext->zPositionInMarkedString = zEndOfType;
       }
+      /* Skip whitespace after value */
+      zEndOfWhitespace = orxString_SkipWhiteSpaces(_pstParserContext->zPositionInMarkedString);
+      if (zEndOfWhitespace == orxSTRING_EMPTY)
+      {
+        /* We are apparently done - this means the user starting doing markup but didn't finish it */
+        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", _pstParserContext->zPositionInMarkedString);
+        return pstResult;
+      }
+      _pstParserContext->zPositionInMarkedString += (zEndOfWhitespace - _pstParserContext->zPositionInMarkedString);
       /* Create the marker */
       orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
       /* Original type is the same as the marker data's type */
