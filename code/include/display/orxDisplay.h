@@ -185,7 +185,6 @@ typedef enum __orxTEXT_MARKER_TYPE_t
   orxTEXT_MARKER_TYPE_SCALE,
   orxTEXT_MARKER_TYPE_NUMBER_STYLES, /* Sentinel value for enum boundary of revertible marker types */
   orxTEXT_MARKER_TYPE_POP,
-  orxTEXT_MARKER_TYPE_CLEAR,
   orxTEXT_MARKER_TYPE_NUMBER_PARSED, /* Sentinel value for enum boundary of parsed marker types */
   /* Internal marker types */
   orxTEXT_MARKER_TYPE_DEFAULT,
