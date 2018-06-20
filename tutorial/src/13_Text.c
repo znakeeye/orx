@@ -55,7 +55,7 @@ static orxS32     s32CurrentTextIndex = -1; /* We start at negative one so it in
 const orxSTRING zMarkerNameTable[orxTEXT_MARKER_TYPE_NUMBER] = {0};
 
 #define ADD_MARKER_STRING(name) zMarkerNameTable[orxTEXT_MARKER_TYPE_ ## name] = orxSTRINGIFY(name)
-void PopulateMarkerNameTable()
+static void PopulateMarkerNameTable()
 {
   ADD_MARKER_STRING(FONT);
   ADD_MARKER_STRING(COLOR);
@@ -66,7 +66,7 @@ void PopulateMarkerNameTable()
   ADD_MARKER_STRING(NONE);
 }
 
-void DebugText(const orxTEXT *_pstText)
+static void DebugText(const orxTEXT *_pstText)
 {
   const orxSTRING zString = orxText_GetString(_pstText);
   orxLOG("String: %s", zString);
@@ -109,7 +109,7 @@ void DebugText(const orxTEXT *_pstText)
   }
 }
 
-void ResetText()
+static void ResetText()
 {
   if (pstCurrentText != orxNULL)
   {
@@ -120,7 +120,7 @@ void ResetText()
 }
 
 /* TODO Find a better way of writing this */
-void CycleText(orxBOOL _bNext)
+static void CycleText(orxBOOL _bNext)
 {
   orxLOG("Cycling to %s text object", (_bNext ? "next" : "previous"));
   s32CurrentTextIndex += (_bNext ? 1 : -1);
@@ -153,15 +153,6 @@ void CycleText(orxBOOL _bNext)
   }
 }
 
-orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
-  orxSTATUS eResult = orxSTATUS_SUCCESS;
-  if (_pstEvent->eID == orxRESOURCE_EVENT_UPDATE)
-  {
-    ResetText();
-  }
-  return eResult;
-}
-
 static void SwapTextList()
 {
   orxConfig_PushSection("Scene");
@@ -190,9 +181,18 @@ static void SwapTextList()
   CycleText(orxTRUE);
 }
 
+static orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
+  orxSTATUS eResult = orxSTATUS_SUCCESS;
+  if (_pstEvent->eID == orxRESOURCE_EVENT_UPDATE)
+  {
+    ResetText();
+  }
+  return eResult;
+}
+
 /** Inits the tutorial
  */
-orxSTATUS orxFASTCALL Init()
+static orxSTATUS orxFASTCALL Init()
 {
   PopulateMarkerNameTable();
   /* Displays a small hint in console */
@@ -216,7 +216,7 @@ orxSTATUS orxFASTCALL Init()
 }
 /** Run function
  */
-orxSTATUS orxFASTCALL Run()
+static orxSTATUS orxFASTCALL Run()
 {
   orxSTATUS eResult = orxSTATUS_SUCCESS;
 
@@ -261,7 +261,7 @@ orxSTATUS orxFASTCALL Run()
 
 /** Exit function
  */
-void orxFASTCALL Exit()
+static void orxFASTCALL Exit()
 {
   /* We're a bit lazy here so we let orx clean all our mess! :) */
 }
