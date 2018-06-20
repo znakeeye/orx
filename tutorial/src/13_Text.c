@@ -50,6 +50,7 @@
 static orxOBJECT *pstScene = orxNULL;
 static orxOBJECT *pstLabel = orxNULL;
 static orxOBJECT *pstCurrentText = orxNULL;
+static orxS32     s32CurrentTextIndex = -1; /* We start at negative one so it increments to 0 on startup */
 
 const orxSTRING zMarkerNameTable[orxTEXT_MARKER_TYPE_NUMBER] = {0};
 
@@ -122,20 +123,18 @@ void ResetText()
 void CycleText(orxBOOL _bNext)
 {
   orxLOG("Cycling to %s text object", (_bNext ? "next" : "previous"));
-  static orxOBJECT *pstObject = orxNULL;
-  static orxS32     s32Index = -1; /* We start at negative one so it increments to 0 on startup */
-  s32Index += (_bNext ? 1 : -1);
+  s32CurrentTextIndex += (_bNext ? 1 : -1);
   orxConfig_PushSection("Scene");
   orxU32 u32Size = orxConfig_GetListCount("TextList");
   orxConfig_PopSection();
-  if(s32Index < 0)
+  if(s32CurrentTextIndex < 0)
   {
-    s32Index = u32Size - 1;
+    s32CurrentTextIndex = u32Size - 1;
   }
-  s32Index = s32Index % u32Size;
-  orxLOG("Index is now %d", s32Index);
+  s32CurrentTextIndex = s32CurrentTextIndex % u32Size;
+  orxLOG("Index is now %d", s32CurrentTextIndex);
   orxConfig_PushSection("Scene");
-  const orxSTRING zObjectName = orxConfig_GetListString("TextList", s32Index);
+  const orxSTRING zObjectName = orxConfig_GetListString("TextList", s32CurrentTextIndex);
   orxConfig_PopSection();
   if (orxConfig_HasSection(zObjectName))
   {
@@ -161,6 +160,34 @@ orxSTATUS orxFASTCALL ConfigEventHandler(const orxEVENT *_pstEvent) {
     ResetText();
   }
   return eResult;
+}
+
+static void SwapTextList()
+{
+  orxConfig_PushSection("Scene");
+  orxSTRING zCurrentTextList = orxConfig_GetString("CurrentList");
+  if (zCurrentTextList == orxNULL || zCurrentTextList == orxSTRING_EMPTY)
+  {
+    orxLOG("Please make sure Scene.TextList exists and is equal to 'Test' or 'Demo'");
+    return;
+  }
+
+  if (orxString_Compare("Test", zCurrentTextList) == 0)
+  {
+    zCurrentTextList = "Demo";
+    orxConfig_SetString("TextList", "@TextLists.Demo");
+  }
+  else
+  {
+    zCurrentTextList = "Test";
+    orxConfig_SetString("TextList", "@TextLists.Test");
+  }
+
+  orxConfig_SetString("CurrentList", zCurrentTextList);
+  orxObject_SetLifeTime(pstCurrentText, orxFLOAT_0);
+  pstCurrentText = orxNULL;
+  s32CurrentTextIndex = -1;
+  CycleText(orxTRUE);
 }
 
 /** Inits the tutorial
@@ -205,6 +232,13 @@ orxSTATUS orxFASTCALL Run()
   {
     orxLOG("PREVIOUS");
     CycleText(orxFALSE);
+  }
+
+  /* Cycle previous? */
+  if (orxInput_IsActive("Swap") && orxInput_HasNewStatus("Swap"))
+  {
+    orxLOG("SWAP");
+    SwapTextList();
   }
 
   /* Screenshot? */
