@@ -612,9 +612,40 @@ static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
   return orxString_GetFirstCharacterCodePoint(*_pzCursor, (const orxSTRING *)_pzCursor);
 }
 
+static orxHASHTABLE * orxFASTCALL orxText_LoadAliasTable(const orxSTRING _zSectionName)
+{
+  orxU32 u32KeyCount = 0;
+  orxHASHTABLE *pstAliasTable = orxNULL;
+
+  orxConfig_PushSection(_zSectionName);
+
+  /* TODO does this include inherited keys? */
+  u32KeyCount = orxConfig_GetKeyCount();
+  if (u32KeyCount == 0)
+  {
+    return orxNULL;
+  }
+
+  pstAliasTable = orxHashTable_Create(u32KeyCount, orxHASHTABLE_KU32_FLAG_NONE, orxMEMORY_TYPE_MAIN);
+  orxASSERT(pstAliasTable);
+
+  orxU32 u32KeyIndex = 0;
+  /* Populate table */
+  for (u32KeyIndex = 0; u32KeyIndex < u32KeyCount; u32KeyIndex++)
+  {
+    const orxSTRING zKey = orxConfig_GetKey(u32KeyIndex);
+    const orxSTRING zValue = orxConfig_GetString(zKey);
+    /* TODO double-check whether the u64 cast is necessary */
+    orxHashTable_Add(pstAliasTable, (orxU64) orxString_GetID(zKey), (void *) (orxU64) zValue);
+  }
+  orxConfig_PopSection();
+
+  return pstAliasTable;
+}
+
+
 static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
-  /* TODO parse whitespace */
   /* TODO I don't think a lot of the assumptions made when writing this still hold. Particularly how failure is handled - I have not defined that for the new syntax yet */
   /* TODO fix debug warning output missing style typename */
   orxTEXT_MARKER *pstResult = orxNULL;
