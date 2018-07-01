@@ -1666,6 +1666,7 @@ orxTEXT *orxFASTCALL orxText_Create()
 orxTEXT *orxFASTCALL orxText_CreateFromConfig(const orxSTRING _zConfigID)
 {
   orxTEXT *pstResult;
+  const orxSTRING zAliasTableReference;
 
   /* Checks */
   orxASSERT(sstText.u32Flags & orxTEXT_KU32_STATIC_FLAG_READY);
@@ -1684,6 +1685,12 @@ orxTEXT *orxFASTCALL orxText_CreateFromConfig(const orxSTRING _zConfigID)
       /* Stores its reference key */
       pstResult->zReference = orxConfig_GetCurrentSection();
 
+      zAliasTableReference = orxConfig_GetString("AliasTable");
+      if (zAliasTableReference != orxNULL)
+      {
+        orxText_ProcessAliasTable(zAliasTableReference);
+      }
+
       /* Processes its config data */
       if(orxText_ProcessConfigData(pstResult) == orxSTATUS_FAILURE)
       {
@@ -1695,12 +1702,6 @@ orxTEXT *orxFASTCALL orxText_CreateFromConfig(const orxSTRING _zConfigID)
 
         /* Updates result */
         pstResult = orxNULL;
-      }
-
-      const orxSTRING zAliasTableReference = orxConfig_GetString("AliasTable");
-      if (zAliasTableReference != orxNULL)
-      {
-        orxText_ProcessAliasTable(zAliasTableReference);
       }
     }
 
