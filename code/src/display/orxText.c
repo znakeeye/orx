@@ -839,7 +839,7 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
       orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
       break;
     }
-    *_pu32StyleMarkerTally++;
+    *_pu32StyleMarkerTally += 1;
     pstNode->pstMarker = pstNewMarker;
     pstNode->u32MarkerTally = *_pu32StyleMarkerTally;
 
