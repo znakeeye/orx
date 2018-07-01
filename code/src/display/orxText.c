@@ -858,7 +858,7 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
   return u32AddedStyles;
 }
 
-static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 _pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 _u32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxU32 u32PopCount = 0;
   /* Walk UTF-8 encoded string */
@@ -893,7 +893,7 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
         zStylesString[u32StylesSize - 1] = orxCHAR_NULL;
         orxLOG("Styles Substring: %s", zStylesString);
         ///// Parse styles
-        u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_pu32StyleMarkerTally, _pstParserContext);
+        u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_u32StyleMarkerTally, _pstParserContext);
         orxLOG("Total %u pushed styles from %s", u32PopCount, zStylesString);
         _pstParserContext->zPositionInMarkedString = (orxCHAR *)zStylesTermination;
         _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
@@ -903,7 +903,7 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
       if (_pstParserContext->u32CharacterCodePoint == ':')
       {
         /* Recurse */
-        orxText_ParseMarkupRecursive(_pstText, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
+        orxText_ParseMarkupRecursive(_pstText, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _u32StyleMarkerTally, _pstParserContext);
 
         /* Pop all styles at this recursion depth */
         for (; u32PopCount > 0; u32PopCount--)
