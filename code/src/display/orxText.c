@@ -401,12 +401,11 @@ static orxBOOL orxText_StringIsOfMarkerType(const orxSTRING _zString, const orxS
 }
 
 /** Attempts to interpret a string as a marker type name
- * @param[in]   _pstText      The concerned orxTEXT
  * @param[in]   _zString      The concerned string
  * @param[out]  _pzRemaining  The rest of the string (if not valid type it will not be modified)
  * @return      orxTEXT_MARKER_TYPE - orxTEXT_MARKER_TYPE_NONE indicates the string is not a marker type
  */
-static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(orxTEXT *_pstText, const orxSTRING _zString, const orxSTRING *_pzRemaining)
+static orxTEXT_MARKER_TYPE orxText_ParseMarkerType(const orxSTRING _zString, const orxSTRING *_pzRemaining)
 {
   orxASSERT(_zString != orxNULL);
   orxTEXT_MARKER_TYPE eType = orxTEXT_MARKER_TYPE_NONE;
@@ -643,24 +642,25 @@ static orxHASHTABLE * orxFASTCALL orxText_LoadAliasTable(const orxSTRING _zSecti
   return pstAliasTable;
 }
 
-
-static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+static orxTEXT_MARKER_DATA orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orxSTRING *_pzStylesString)
 {
   /* TODO I don't think a lot of the assumptions made when writing this still hold. Particularly how failure is handled - I have not defined that for the new syntax yet */
   /* TODO fix debug warning output missing style typename */
-  orxTEXT_MARKER *pstResult = orxNULL;
+  orxTEXT_MARKER_DATA stResult;
+  stResult.eType = orxTEXT_MARKER_TYPE_NONE;
   const orxSTRING zEndOfWhitespace = orxNULL;
+  orxSTRING zStylesString = *_pzStylesString;
   orxSTRING zEndOfType = orxNULL;
   /* Skip whitespace before type */
-  zEndOfWhitespace = orxString_SkipWhiteSpaces(_pstParserContext->zPositionInMarkedString);
+  zEndOfWhitespace = orxString_SkipWhiteSpaces(zStylesString);
   if (zEndOfWhitespace == orxSTRING_EMPTY)
   {
     /* We are apparently done - this means the user starting doing markup but didn't finish it */
-    orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", _pstParserContext->zPositionInMarkedString);
-    return pstResult;
+    orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", zStylesString);
+    return stResult;
   }
   /* Attempt to parse marker type, which will also advance the string to the first char after the type (if any) */
-  orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(_pstText, zEndOfWhitespace, (const orxSTRING *)&zEndOfType);
+  orxTEXT_MARKER_TYPE eType = orxText_ParseMarkerType(zEndOfWhitespace, (const orxSTRING *)&zEndOfType);
   /* If it's not a valid marker type */
   if (eType == orxTEXT_MARKER_TYPE_NONE || zEndOfType == orxNULL)
   {
@@ -674,57 +674,51 @@ static orxTEXT_MARKER * orxFASTCALL orxText_TryParseStyle(orxTEXT *_pstText, orx
     if (zEndOfWhitespace == orxSTRING_EMPTY)
     {
       /* We are apparently done - this means the user starting doing markup but didn't finish it */
-      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", _pstParserContext->zPositionInMarkedString);
-      return pstResult;
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", zStylesString);
+      *_pzStylesString = zStylesString;
+      return stResult;
     }
     orxSTRING zEndOfValue = orxNULL;
     /* Try to parse marker data if any, which will also advance the string to the first char after the data (if any) */
-    orxTEXT_MARKER_DATA stData = orxText_ParseMarkerValue(_pstText, eType, zEndOfWhitespace, (const orxSTRING *)&zEndOfValue);
+    stResult = orxText_ParseMarkerValue(_pstText, eType, zEndOfWhitespace, (const orxSTRING *)&zEndOfValue);
     /* If the type was set to an invalid one, it means there was something wrong with the marker data and it must be invalid */
-    if (stData.eType == orxTEXT_MARKER_TYPE_NONE)
+    if (stResult.eType == orxTEXT_MARKER_TYPE_NONE)
     {
       /* Skip this invalid marker */
       if (zEndOfValue != orxNULL)
       {
-        _pstParserContext->zPositionInMarkedString = zEndOfValue;
-        _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+        zStylesString = zEndOfValue;
       }
     }
     else
     {
-      orxASSERT(stData.eType == eType);
+      orxASSERT(stResult.eType == eType);
       /* Finally! A valid marker! */
       if (zEndOfValue != orxNULL)
       {
-        _pstParserContext->zPositionInMarkedString = zEndOfValue;
+        zStylesString = zEndOfValue;
       }
       else
       {
         /* TODO This might not make sense anymore now that stack manipulators aren't a real marker type anymore */
         orxASSERT(eType >= orxTEXT_MARKER_TYPE_NUMBER_STYLES);
-        _pstParserContext->zPositionInMarkedString = zEndOfType;
+        zStylesString = zEndOfType;
       }
       /* Skip whitespace after value */
-      zEndOfWhitespace = orxString_SkipWhiteSpaces(_pstParserContext->zPositionInMarkedString);
+      zEndOfWhitespace = orxString_SkipWhiteSpaces(zStylesString);
       if (zEndOfWhitespace == orxSTRING_EMPTY)
       {
-        /* We are apparently done - this means the user starting doing markup but didn't finish it */
-        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Unfinished text markup in string '%s'", _pstParserContext->zPositionInMarkedString);
-        return pstResult;
+        /* We are apparently done - this means we've reached the end of the styles string */
+        *_pzStylesString = zStylesString;
+        return stResult;
       }
-      _pstParserContext->zPositionInMarkedString += (zEndOfWhitespace - _pstParserContext->zPositionInMarkedString);
-      /* Create the marker */
-      orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
-      /* Original type is the same as the marker data's type */
-      pstResult = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, stData.eType, stData);
-      if (pstResult == orxNULL)
-      {
-        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
-      }
-      return pstResult;
+      zStylesString += (zEndOfWhitespace - zStylesString);
+      *_pzStylesString = zStylesString;
+      return stResult;
     }
   }
-  return pstResult;
+  *_pzStylesString = zStylesString;
+  return stResult;
 }
 
 static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
@@ -760,7 +754,75 @@ static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
   _pstText->u32MarkerCounter = 0;
 }
 
-static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 _u32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 *_pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext, orxHASHTABLE *_pstAliasTable)
+{
+  orxU32 u32AddedStyles = 0;
+  /* TODO implement parsestyles
+    parse next csv
+    try parse as a style
+    if not a style, it must be an alias
+    lookup in alias table
+    recurse on the value in the table, but be sure to detect loops
+    THIS TIME
+   */
+  while (*_zStylesString != orxCHAR_NULL)
+  {
+    /* TODO tryparsestyle needs to take in a string and not operate on context in the same ways */
+    orxTEXT_MARKER_DATA stData = orxText_TryParseStyle(_pstText, &_zStylesString);
+    // Not a style? Must be an alias. Try and get it from the alias table (if there is one).
+    if (!orxDisplay_MarkerTypeIsStyle(stData.eType) && _pstAliasTable)
+    {
+      const orxSTRING zAliasTermination = orxString_SearchChar(_zStylesString, ',');
+      if (zAliasTermination != orxNULL)
+      {
+        /* TODO orxString.h really needs a strtok equivalent... or something. */
+        *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
+      }
+      orxSTRING zAliasDef = (orxSTRING)orxHashTable_Get(_pstAliasTable, (orxU64)orxString_GetID(_zStylesString));
+      if (zAliasDef != orxNULL)
+      {
+        orxSTRING zAliasDefCopy = orxString_Duplicate(zAliasDef);
+        u32AddedStyles += orxText_ParseStyles(_pstText, zAliasDefCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext, _pstAliasTable);
+        orxMemory_Free(zAliasDefCopy);
+      }
+      _zStylesString = (orxSTRING)zAliasTermination + 1;
+      continue;
+    }
+    /* Create the marker */
+    orxU32 u32CurrentOffset = (_pstParserContext->zPositionInOutputString - _pstParserContext->zOutputString);
+    /* Original type is the same as the marker data's type */
+    orxTEXT_MARKER *pstNewMarker = orxText_CreateMarker(_pstMarkerBank, u32CurrentOffset, stData.eType, stData);
+    if (pstNewMarker == orxNULL)
+    {
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker - are we out of memory?");
+    }
+    /* Push marker onto the relevant stack */
+    orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(_pstNodeBank);
+    if (pstNode == orxNULL)
+    {
+      orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
+      break;
+    }
+    *_pu32StyleMarkerTally++;
+    pstNode->pstMarker = pstNewMarker;
+    pstNode->u32MarkerTally = *_pu32StyleMarkerTally;
+
+    orxLinkList_AddEnd(&_astMarkerStacks[stData.eType], (orxLINKLIST_NODE *)pstNode);
+
+    /* Increment number of things to pop when we hit the end of this level of recursion */
+    u32AddedStyles++;
+
+    /* TODO tryparsestyle needs to take in a string and not operate on context in the same ways */
+    _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
+    if (_pstParserContext->u32CharacterCodePoint != ',')
+    {
+      break;
+    }
+  }
+  return u32AddedStyles;
+}
+
+static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 _pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxU32 u32PopCount = 0;
   /* Walk UTF-8 encoded string */
@@ -777,36 +839,33 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
     }
     if (!bEscape && _pstParserContext->u32CharacterCodePoint == '[')
     {
-      orxTEXT_MARKER *pstNewStyle = orxNULL;
-      while (pstNewStyle = orxText_TryParseStyle(_pstText, _pstMarkerBank, _pstParserContext))
+      const orxSTRING zStylesTermination = orxString_SearchChar(_pstParserContext->zPositionInMarkedString, ':');
+      if (zStylesTermination == orxNULL)
       {
-        /* Push marker onto the relevant stack */
-        orxTEXT_MARKER_NODE *pstNode = (orxTEXT_MARKER_NODE *) orxBank_Allocate(_pstNodeBank);
-        if (pstNode == orxNULL)
-        {
-          orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Couldn't allocate marker node - are we out of memory?");
-          break;
-        }
-        _u32StyleMarkerTally++;
-        pstNode->pstMarker = pstNewStyle;
-        pstNode->u32MarkerTally = _u32StyleMarkerTally;
-
-        orxLinkList_AddEnd(&_astMarkerStacks[pstNewStyle->stData.eType], (orxLINKLIST_NODE *)pstNode);
-
-        /* Increment number of things to pop when we hit the end of this level of recursion */
-        u32PopCount++;
-
-        _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
-        if (_pstParserContext->u32CharacterCodePoint != ',')
-        {
-          break;
-        }
+        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Warning: Malformed text - missing '%c'", ':');
       }
+      else
+      {
+        /* Create a nice little duplicate of the list of styles to be applied next */
+        orxU32 u32StylesSize = (zStylesTermination - _pstParserContext->zPositionInMarkedString) + 1;
+#ifdef __orxMSVC__
+        orxCHAR *zStylesString = (orxCHAR *)alloca(u32StylesSize);
+#else /* __orxMSVC__ */
+        orxCHAR zStylesString[u32StylesSize];
+#endif /* __orxMSVC__ */
+        orxString_NCopy(zStylesString, _pstParserContext->zPositionInMarkedString, u32StylesSize - 1);
+        zStylesString[u32StylesSize - 1] = orxCHAR_NULL;
+        orxLOG("Styles Substring: %s", zStylesString);
+        ///// Parse styles
+        u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_pu32StyleMarkerTally, _pstParserContext, orxNULL);
+        _pstParserContext->zPositionInMarkedString += (u32StylesSize - 1);
+      }
+
       /* The colon indicates the end of a sequence of styles before the text to apply them to */
       if (_pstParserContext->u32CharacterCodePoint == ':')
       {
         /* Recurse */
-        orxText_ParseMarkupRecursive(_pstText, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _u32StyleMarkerTally, _pstParserContext);
+        orxText_ParseMarkupRecursive(_pstText, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
 
         /* Pop all styles at this recursion depth */
         for (; u32PopCount > 0; u32PopCount--)
@@ -867,7 +926,8 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
       }
       else
       {
-        /* this was a parsing error */
+        /* TODO this is terminating the string after the first markup "element" - WHY? WHY DAMMIT. */
+        orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Reached end of styles substring, but did not encounter a '%c'! Malformed markup?", ':');
       }
     }
     else if (!bEscape && _pstParserContext->u32CharacterCodePoint == ']')
