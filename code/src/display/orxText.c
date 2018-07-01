@@ -101,6 +101,7 @@ struct __orxTEXT_t
   orxFLOAT          fHeight;                    /**< Height : 56 / 88 */
   const orxSTRING   zReference;                 /**< Config reference : 60 / 96 */
   orxSTRING         zOriginalString;            /**< Original string : 64 / 104 */
+  orxHASHTABLE     *pstAliasTable;              /**< Mapping of strings to strings for aliases */
 };
 
 /** Static structure
@@ -611,11 +612,15 @@ static orxU32 orxFASTCALL orxText_WalkCodePoint(orxSTRING *_pzCursor)
   return orxString_GetFirstCharacterCodePoint(*_pzCursor, (const orxSTRING *)_pzCursor);
 }
 
-static orxHASHTABLE * orxFASTCALL orxText_LoadAliasTable(const orxSTRING _zSectionName)
+static orxHASHTABLE * orxFASTCALL orxText_ProcessAliasTable(const orxSTRING _zSectionName)
 {
   orxU32 u32KeyCount = 0;
   orxHASHTABLE *pstAliasTable = orxNULL;
 
+  if (_zSectionName == orxNULL || !orxConfig_HasSection(_zSectionName))
+  {
+    return orxNULL;
+  }
   orxConfig_PushSection(_zSectionName);
 
   /* TODO does this include inherited keys? */
@@ -636,6 +641,7 @@ static orxHASHTABLE * orxFASTCALL orxText_LoadAliasTable(const orxSTRING _zSecti
     const orxSTRING zValue = orxConfig_GetString(zKey);
     /* TODO double-check whether the u64 cast is necessary */
     orxHashTable_Add(pstAliasTable, (orxU64) orxString_GetID(zKey), (void *) (orxU64) zValue);
+    orxLOG("Alias %s = %s", zKey, zValue);
   }
   orxConfig_PopSection();
 
@@ -754,7 +760,7 @@ static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
   _pstText->u32MarkerCounter = 0;
 }
 
-static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 *_pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext, orxHASHTABLE *_pstAliasTable)
+static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 *_pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxU32 u32AddedStyles = 0;
   /* TODO implement parsestyles
@@ -765,27 +771,38 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
     recurse on the value in the table, but be sure to detect loops
     THIS TIME
    */
+  orxHASHTABLE *pstAliasTable = _pstText->pstAliasTable;
+  orxLOG("Parsing styles for %s", _zStylesString);
   while (*_zStylesString != orxCHAR_NULL)
   {
     /* TODO tryparsestyle needs to take in a string and not operate on context in the same ways */
     orxTEXT_MARKER_DATA stData = orxText_TryParseStyle(_pstText, &_zStylesString);
     // Not a style? Must be an alias. Try and get it from the alias table (if there is one).
-    if (!orxDisplay_MarkerTypeIsStyle(stData.eType) && _pstAliasTable)
+    if (!orxDisplay_MarkerTypeIsStyle(stData.eType))
     {
-      const orxSTRING zAliasTermination = orxString_SearchChar(_zStylesString, ',');
-      if (zAliasTermination != orxNULL)
+      orxLOG("%s is not a style, check if it's an alias", _zStylesString);
+      /* No alias table? Nothing to do for this */
+      if (pstAliasTable)
       {
-        /* TODO orxString.h really needs a strtok equivalent... or something. */
-        *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
+        const orxSTRING zAliasTermination = orxString_SearchChar(_zStylesString, ',');
+        if (zAliasTermination != orxNULL)
+        {
+          /* TODO orxString.h really needs a strtok equivalent... or something. */
+          *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
+        }
+        orxSTRING zAliasDef = (orxSTRING)orxHashTable_Get(pstAliasTable, (orxU64)orxString_GetID(_zStylesString));
+        if (zAliasDef != orxNULL)
+        {
+          orxSTRING zAliasDefCopy = orxString_Duplicate(zAliasDef);
+          orxASSERT(zAliasDefCopy);
+          orxLOG("Alias definiton: %s", zAliasDef);
+          u32AddedStyles += orxText_ParseStyles(_pstText, zAliasDefCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
+          orxLOG("Total added added styles: %u", u32AddedStyles);
+          orxMemory_Free(zAliasDefCopy);
+        }
+        _zStylesString = (orxSTRING)zAliasTermination + 1;
       }
-      orxSTRING zAliasDef = (orxSTRING)orxHashTable_Get(_pstAliasTable, (orxU64)orxString_GetID(_zStylesString));
-      if (zAliasDef != orxNULL)
-      {
-        orxSTRING zAliasDefCopy = orxString_Duplicate(zAliasDef);
-        u32AddedStyles += orxText_ParseStyles(_pstText, zAliasDefCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext, _pstAliasTable);
-        orxMemory_Free(zAliasDefCopy);
-      }
-      _zStylesString = (orxSTRING)zAliasTermination + 1;
+      orxText_WalkCodePoint(&_zStylesString);
       continue;
     }
     /* Create the marker */
@@ -857,7 +874,8 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
         zStylesString[u32StylesSize - 1] = orxCHAR_NULL;
         orxLOG("Styles Substring: %s", zStylesString);
         ///// Parse styles
-        u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_pu32StyleMarkerTally, _pstParserContext, orxNULL);
+        u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_pu32StyleMarkerTally, _pstParserContext);
+        orxLOG("Total %u pushed styles from %s", u32PopCount, zStylesString);
         _pstParserContext->zPositionInMarkedString += (u32StylesSize - 1);
       }
 
@@ -1620,6 +1638,7 @@ orxTEXT *orxFASTCALL orxText_Create()
     pstResult->zString          = orxNULL;
     pstResult->pstFont          = orxNULL;
     pstResult->zOriginalString  = orxNULL;
+    pstResult->pstAliasTable    = orxNULL;
     pstResult->pstMarkerArray   = orxNULL;
     pstResult->u32MarkerCounter = 0;
 
@@ -1675,6 +1694,12 @@ orxTEXT *orxFASTCALL orxText_CreateFromConfig(const orxSTRING _zConfigID)
 
         /* Updates result */
         pstResult = orxNULL;
+      }
+
+      const orxSTRING zAliasTableReference = orxConfig_GetString("AliasTable");
+      if (zAliasTableReference != orxNULL)
+      {
+        orxText_ProcessAliasTable(zAliasTableReference);
       }
     }
 
