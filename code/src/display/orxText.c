@@ -876,7 +876,8 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
         ///// Parse styles
         u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_pu32StyleMarkerTally, _pstParserContext);
         orxLOG("Total %u pushed styles from %s", u32PopCount, zStylesString);
-        _pstParserContext->zPositionInMarkedString += (u32StylesSize - 1);
+        _pstParserContext->zPositionInMarkedString = (orxCHAR *)zStylesTermination;
+        _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
       }
 
       /* The colon indicates the end of a sequence of styles before the text to apply them to */
