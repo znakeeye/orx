@@ -796,22 +796,25 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
         /* TODO orxString.h really needs a strtok equivalent... or something. */
         *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
       }
+      orxSTRING zAliasKey = _zStylesString;
+      _zStylesString = (orxSTRING)zAliasTermination + 1;
       /* No alias table? Nothing to do for this */
       if (pstAliasTable != orxNULL)
       {
-        orxSTRING zAliasDef = (orxSTRING)orxHashTable_Get(pstAliasTable, (orxU64)orxString_GetID(_zStylesString));
-        if (zAliasDef != orxNULL)
+        orxSTRING zAliasValue = (orxSTRING)orxHashTable_Get(pstAliasTable, (orxU64)orxString_GetID(zAliasKey));
+        if (zAliasValue != orxNULL)
         {
-          orxSTRING zAliasDefCopy = orxString_Duplicate(zAliasDef);
-          orxASSERT(zAliasDefCopy);
-          orxLOG("Alias definiton: %s", zAliasDef);
-          u32AddedStyles += orxText_ParseStyles(_pstText, zAliasDefCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
+          /* Make a copy of the alias value since evaluating it will be a destructive process */
+          orxSTRING zAliasValueCopy = orxString_Duplicate(zAliasValue);
+          orxASSERT(zAliasValueCopy);
+          orxLOG("Evaluating alias %s = %s", zAliasKey, zAliasValue);
+          u32AddedStyles += orxText_ParseStyles(_pstText, zAliasValueCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
           orxLOG("Total added added styles: %u", u32AddedStyles);
-          orxMemory_Free(zAliasDefCopy);
+          orxMemory_Free(zAliasValueCopy);
         }
         else
         {
-          orxLOG("%s is not an alias", _zStylesString);
+          orxLOG("%s is not an alias", zAliasKey);
         }
       }
       /* If this was the last style in the string, we're all done here */
@@ -819,7 +822,6 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
       {
         break;
       }
-      _zStylesString = (orxSTRING)zAliasTermination + 1;
       continue;
     }
     /* Create the marker */
