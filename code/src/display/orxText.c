@@ -781,15 +781,15 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
     if (!orxDisplay_MarkerTypeIsStyle(stData.eType))
     {
       orxLOG("%s is not a style, check if it's an alias", _zStylesString);
-      /* No alias table? Nothing to do for this */
-      if (pstAliasTable)
+      const orxSTRING zAliasTermination = orxString_SearchChar(_zStylesString, ',');
+      if (zAliasTermination != orxNULL)
       {
-        const orxSTRING zAliasTermination = orxString_SearchChar(_zStylesString, ',');
-        if (zAliasTermination != orxNULL)
-        {
-          /* TODO orxString.h really needs a strtok equivalent... or something. */
-          *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
-        }
+        /* TODO orxString.h really needs a strtok equivalent... or something. */
+        *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
+      }
+      /* No alias table? Nothing to do for this */
+      if (pstAliasTable != orxNULL)
+      {
         orxSTRING zAliasDef = (orxSTRING)orxHashTable_Get(pstAliasTable, (orxU64)orxString_GetID(_zStylesString));
         if (zAliasDef != orxNULL)
         {
@@ -800,9 +800,17 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
           orxLOG("Total added added styles: %u", u32AddedStyles);
           orxMemory_Free(zAliasDefCopy);
         }
-        _zStylesString = (orxSTRING)zAliasTermination + 1;
+        else
+        {
+          orxLOG("%s is not an alias", _zStylesString);
+        }
       }
-      orxText_WalkCodePoint(&_zStylesString);
+      /* If this was the last style in the string, we're all done here */
+      if (zAliasTermination == orxNULL)
+      {
+        break;
+      }
+      _zStylesString = (orxSTRING)zAliasTermination + 1;
       continue;
     }
     /* Create the marker */
