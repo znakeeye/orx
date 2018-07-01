@@ -1688,7 +1688,7 @@ orxTEXT *orxFASTCALL orxText_CreateFromConfig(const orxSTRING _zConfigID)
       zAliasTableReference = orxConfig_GetString("AliasTable");
       if (zAliasTableReference != orxNULL)
       {
-        orxText_ProcessAliasTable(zAliasTableReference);
+        pstResult->pstAliasTable = orxText_ProcessAliasTable(zAliasTableReference);
       }
 
       /* Processes its config data */
