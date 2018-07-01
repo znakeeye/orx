@@ -781,7 +781,16 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
     if (!orxDisplay_MarkerTypeIsStyle(stData.eType))
     {
       orxLOG("%s is not a style, check if it's an alias", _zStylesString);
-      const orxSTRING zAliasTermination = orxString_SearchChar(_zStylesString, ',');
+      const orxSTRING zAliasTermination = _zStylesString;
+      while (*zAliasTermination    != ','
+             && *zAliasTermination != ' '
+             && *zAliasTermination != '\t'
+             && *zAliasTermination != '\r'
+             && *zAliasTermination != '\n'
+             && *zAliasTermination != '\0')
+      {
+        zAliasTermination++;
+      }
       if (zAliasTermination != orxNULL)
       {
         /* TODO orxString.h really needs a strtok equivalent... or something. */
