@@ -781,7 +781,9 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
     if (!orxDisplay_MarkerTypeIsStyle(stData.eType))
     {
       orxLOG("%s is not a style, check if it's an alias", _zStylesString);
-      const orxSTRING zAliasTermination = _zStylesString;
+      orxSTRING zAliasKey = _zStylesString;
+      orxSTRING zAliasTermination = _zStylesString;
+      /* TODO this needs a lot of work */
       while (*zAliasTermination    != ','
              && *zAliasTermination != ' '
              && *zAliasTermination != '\t'
@@ -791,13 +793,16 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
       {
         zAliasTermination++;
       }
-      if (zAliasTermination != orxNULL)
+      if (*zAliasTermination != orxCHAR_NULL)
       {
         /* TODO orxString.h really needs a strtok equivalent... or something. */
-        *((orxSTRING)zAliasTermination) = orxCHAR_NULL;
+        *zAliasTermination = orxCHAR_NULL;
+        _zStylesString = (orxSTRING)zAliasTermination + 1;
       }
-      orxSTRING zAliasKey = _zStylesString;
-      _zStylesString = (orxSTRING)zAliasTermination + 1;
+      else
+      {
+        _zStylesString = zAliasTermination;
+      }
       /* No alias table? Nothing to do for this */
       if (pstAliasTable != orxNULL)
       {
@@ -816,11 +821,6 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
         {
           orxLOG("%s is not an alias", zAliasKey);
         }
-      }
-      /* If this was the last style in the string, we're all done here */
-      if (zAliasTermination == orxNULL)
-      {
-        break;
       }
       continue;
     }
@@ -848,10 +848,10 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
     /* Increment number of things to pop when we hit the end of this level of recursion */
     u32AddedStyles++;
 
-    /* TODO tryparsestyle needs to take in a string and not operate on context in the same ways */
-    _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
-    if (_pstParserContext->u32CharacterCodePoint != ',')
+    // TODO skip whitespace
+    if (*_zStylesString != orxCHAR_NULL && *_zStylesString != ',')
     {
+      orxLOG("End of style '%c' was not expected '%c'", *_zStylesString, ',');
       break;
     }
   }
