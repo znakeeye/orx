@@ -760,7 +760,7 @@ static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
   _pstText->u32MarkerCounter = 0;
 }
 
-static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 *_pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+static orxU32 orxText_ParseStylesRecursive(orxTEXT *_pstText, orxSTRING _zStylesString, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 *_pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
 {
   orxU32 u32AddedStyles = 0;
   /* TODO implement parsestyles
@@ -812,9 +812,9 @@ static orxU32 orxText_ParseStyles(orxTEXT *_pstText, orxSTRING _zStylesString, o
           /* Make a copy of the alias value since evaluating it will be a destructive process */
           orxSTRING zAliasValueCopy = orxString_Duplicate(zAliasValue);
           orxASSERT(zAliasValueCopy);
-          orxLOG("Evaluating alias %s = %s", zAliasKey, zAliasValue);
-          u32AddedStyles += orxText_ParseStyles(_pstText, zAliasValueCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
-          orxLOG("Total added added styles: %u", u32AddedStyles);
+          orxLOG("Evaluating alias %s = %s recursively", zAliasKey, zAliasValue);
+          u32AddedStyles += orxText_ParseStylesRecursive(_pstText, zAliasValueCopy, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, _pu32StyleMarkerTally, _pstParserContext);
+          orxLOG("Total added styles after recursing: %u", u32AddedStyles);
           orxMemory_Free(zAliasValueCopy);
         }
         else
@@ -893,7 +893,7 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
         zStylesString[u32StylesSize - 1] = orxCHAR_NULL;
         orxLOG("Styles Substring: %s", zStylesString);
         ///// Parse styles
-        u32PopCount += orxText_ParseStyles(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_u32StyleMarkerTally, _pstParserContext);
+        u32PopCount += orxText_ParseStylesRecursive(_pstText, zStylesString, _pstMarkerBank, _pstNodeBank, _astMarkerStacks, &_u32StyleMarkerTally, _pstParserContext);
         orxLOG("Total %u pushed styles from %s", u32PopCount, zStylesString);
         _pstParserContext->zPositionInMarkedString = (orxCHAR *)zStylesTermination;
         _pstParserContext->u32CharacterCodePoint = orxText_WalkCodePoint(&_pstParserContext->zPositionInMarkedString);
