@@ -965,7 +965,6 @@ static void orxFASTCALL orxText_ParseMarkupRecursive(orxTEXT *_pstText, orxBANK 
       }
       else
       {
-        /* TODO this is terminating the string after the first markup "element" - WHY? WHY DAMMIT. */
         orxDEBUG_PRINT(orxDEBUG_LEVEL_DISPLAY, "Reached end of styles substring, but did not encounter a '%c'! Malformed markup?", ':');
       }
     }
