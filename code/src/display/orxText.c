@@ -482,6 +482,7 @@ static orxTEXT_MARKER_DATA orxText_ParseMarkerValue(orxTEXT *_pstText, orxTEXT_M
         }
         else
         {
+          /* TODO consider only storing the reference, then do a second pass at an higher level to set the map/bitmap/ownership/refcount so we can stop passing pstText as an argument */
           /* Store the raw data that's used by the renderer */
           stResult.stFontData.pstMap = orxFont_GetMap(pstFont);
           stResult.stFontData.pstFont = orxTexture_GetBitmap(orxFont_GetTexture(pstFont));
