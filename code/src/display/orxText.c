@@ -762,6 +762,8 @@ static void orxFASTCALL orxText_DeleteMarkers(orxTEXT *_pstText)
 }
 
 static orxU32 orxText_ParseStylesRecursive(orxTEXT *_pstText, orxSTRING _zStylesString, orxBANK *_pstMarkerBank, orxBANK *_pstNodeBank, orxLINKLIST *_astMarkerStacks, orxU32 *_pu32StyleMarkerTally, orxTEXT_MARKER_PARSER_CONTEXT *_pstParserContext)
+// NOTE most of these passed variables need to stay, oh well, but at least they wont have to be passed over and over
+// As an aside, passing _orxText is unnecessary so long as alias tables are cached and in that case you only need to pass that or the config section for it. _pstParserContext may be possible to eliminate as well since we only use it for offset calculation which may not need to be updated. _pu32StyleMarkerTally may also be eliminated (maybe) depending on how we refactor recursion in recursive markup parsing.
 {
   orxU32 u32AddedStyles = 0;
   /* TODO implement parsestyles
